@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}課題一覧{% endblock %}
+
+{% block content %}
+<h1>課題一覧</h1>
+<ul>
+    {% for d in dirlist %}
+    <li><a href="./{{loop.index0}}/students/">{{d}}</a>
+        {% if finished[loop.index0] %}
+        <span class="check">
+            <i class="bi bi-check-square-fill"></i>
+        </span>
+        {% endif %}
+        [<a href="/edit_problems/{{loop.index0}}?prevpage='/'">問題編集</a>]
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

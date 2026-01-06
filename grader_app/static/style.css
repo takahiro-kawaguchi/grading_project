@@ -1,0 +1,124 @@
+body {
+    padding-top: 80px;
+}
+
+img {
+    width: 100%;
+    height: auto;
+}
+
+.unavailable{
+    color: #ccc;
+    text-decoration: line-through;
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+#image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.problems {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-top-width: 2px;
+    border-top-style: solid;
+    padding-top: 20px;
+    border-bottom-width: 2px;
+    border-bottom-style: solid;
+}
+
+.result{
+    text-align: center;
+    width: 50px;
+    display: inline-block;
+}
+
+.problem{
+    display: inline-block;
+    width: 60px; 
+    margin-left: 20px;
+
+}
+
+ul{
+    list-style-type: none;
+}
+
+.check{
+    margin-left: 10px;
+}
+.check i{
+    font-size: 18px;
+    color: green;
+}
+
+.magnifier {
+    position: absolute;
+    border: 2px solid black;
+    overflow: hidden;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    z-index: 2;
+}
+
+.mycode{
+    font-size: 1rem; /*ソースコードフォントサイズ*/
+  }
+
+.result_code {
+    background-color: black;
+    font-size: 1rem;
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;  /* 折り返したいなら */
+    box-sizing: border-box; /* paddingを幅に含める */
+    color: white;
+    text-align: left;
+    padding: 1em;
+
+    max-height: 300px;
+    overflow: auto;
+}
+
+.input-container {
+    display: flex;
+    align-items: flex-start; /* 上揃え */
+    margin-bottom: 1em;
+}
+
+
+.spin-icon {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.program-comment{
+    color: #586e75;
+    background-color:  #eee8d5; 
+    padding: 1rem; 
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.sticky-sidebar {
+    position: sticky;
+    top: 80px; /* ヘッダーの高さに応じて調整 */
+    max-height: calc(100vh - 80px); /* ビューポートの高さからヘッダー分を引く */
+    overflow-y: auto;
+}
