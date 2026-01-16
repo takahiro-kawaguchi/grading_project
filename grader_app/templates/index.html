@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}採点ツール{% endblock %}
+
+{% block content %}
+<ul>
+    <li><a href="{{ url_for('pdf.index') }}">PDF採点ツール</a></li>
+    <li><a href="{{ url_for('code.index') }}">プログラミング採点ツール</a></li>
+</ul>
+{% endblock %}

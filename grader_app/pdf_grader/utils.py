@@ -11,6 +11,10 @@ def extract_keys(filename):
     match = re.search(r'第(\d+)回', filename)
     return int(match.group(1)) if match else float('inf')
 
+def get_report_list(dirlist):
+    """ディレクトリリストからレポート番号を抽出し、ソートされたリストを返す"""
+    dirlist = set([d.split("の提出")[0] for d in dirlist])
+    return sorted(dirlist, key=extract_keys)
 
 def get_total_pdf_pages(pdf_path_list):
     """PDFファイルのリストを受け取り、合計ページ数を返す"""
@@ -89,24 +93,28 @@ def convert_pdf_to_images(pdf_path_list, savedir, img_name):
     
 
 def get_students(report_index):
-    sorted_dirlist = current_app.config['PDF_LIST']
-    students = os.listdir(os.path.join(current_app.config['PDF_BASE_DIR'], sorted_dirlist[report_index]))
+    dirlist = current_app.config['PDF_LIST']
+    raw_dirlist = current_app.config['RAW_PDF_LIST']
+    students = []
+    report = dirlist[report_index]
+    for r in raw_dirlist:
+        if report in r:
+            students.extend(os.listdir(os.path.join(current_app.config['PDF_BASE_DIR'], r)))
+    students = [s.split("_")[0] for s in students]
+    students = sorted(list(set(students)))
     return students
 
-def get_images(report_index, author_index, rotate):
-    sorted_dirlist = current_app.config['PDF_LIST']
-    author_list = get_students(report_index)
-    author = author_list[author_index]
+def get_images(report, author, rotate):
     img_name = author
     pdf_path_list = [
         os.path.join(
             current_app.config['PDF_BASE_DIR'],
-            sorted_dirlist[report_index],
+            report,
             author,
             pdf
-        ) for pdf in os.listdir(os.path.join(current_app.config['PDF_BASE_DIR'], sorted_dirlist[report_index], author))
+        ) for pdf in os.listdir(os.path.join(current_app.config['PDF_BASE_DIR'], report, author))
     ]
-    images = convert_pdf_to_images(pdf_path_list, sorted_dirlist[report_index] + "/" + author, img_name)
+    images = convert_pdf_to_images(pdf_path_list, report + "/" + author, img_name)
     if rotate != 0:
         images = rotate_images(images, rotate)
     return images
@@ -128,3 +136,24 @@ def rotate_images(images, rotate):
             img.save(rotated_img_path)
         images_new.append(rotated_img_path)
     return images_new
+
+def get_submission(report_name, author_name, kind_name, rotate=0):
+    base_dir = current_app.config['PDF_BASE_DIR']
+    raw_dir = current_app.config['RAW_PDF_LIST']
+    filtered_raw_dir = [s for s in raw_dir if report_name in s and kind_name in s]
+    if len(filtered_raw_dir) > 1:
+        print(f"警告: {author_name} の {kind_name} に該当するディレクトリが複数見つかりました。最初のものを使用します。")
+    if len(filtered_raw_dir) == 0:
+        print(f"警告: {author_name} の {kind_name} に該当するディレクトリが見つかりませんでした。")
+    
+    submissions = os.listdir(os.path.join(base_dir, filtered_raw_dir[0]))
+    filtered_submissions = [s for s in submissions if author_name in s]
+    if len(filtered_submissions) > 1:
+        print(f"警告: {author_name} の提出物が複数見つかりました。最初のものを使用します。")
+    if len(filtered_submissions) == 0:
+        print(f"警告: {author_name} の提出物が見つかりませんでした。")
+    
+    report = filtered_raw_dir[0]
+    author = filtered_submissions[0]
+    images = get_images(report, author, rotate=rotate)
+    return images

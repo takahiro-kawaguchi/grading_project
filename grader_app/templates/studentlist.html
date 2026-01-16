@@ -17,9 +17,9 @@
 {% block content %}
 <h1>{{report}}</h1>
 <ul>
-    {% for a in author_list %}
+    {% for a in student_list %}
     <li>
-        <a href="/pdf/{{report_index}}/{{loop.index0}}/0">{{a}}</a>
+        <a href="/pdf/{{report_index}}/{{loop.index0}}/">{{a}}</a>
         <span class="check">
             {%if finished[loop.index0]%}
             <i class="bi bi-check-square-fill"></i>

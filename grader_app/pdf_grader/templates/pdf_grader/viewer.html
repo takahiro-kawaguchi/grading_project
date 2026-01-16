@@ -1,20 +1,32 @@
 {% extends "viewer_base.html" %}
 
-{%block navigation %}
-<nav class="fixed-top navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="{{ url_for(request.blueprint + '.index') }}">課題一覧</a></li>
-            </ul>
-        </div>
-    </div>
-</nav>
-{% endblock %}
-
 {% block maincontent %}
     <h1>PDF Viewer</h1>
-    <div id="answer"><h2>処理中・・・</h2></div>
-    <div id="detail"><h2>処理中・・・</h2></div>
+    <div id="answer"><h2>解答のみ</h2>
+        <p>画像の処理中です <span class="status-text text-secondary"><i class="bi bi-arrow-repeat spin-icon"></i></span></p>
+</div>
+    <div id="detail"><h2>詳細</h2>
+        <p>画像の処理中です <span class="status-text text-secondary"><i class="bi bi-arrow-repeat spin-icon"></i></span></p>
+    </div>
+{% endblock %}
+
+{% block sidecontent %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('{{ url_for("pdf.generate", report_index=report_index, student_index=student_index, kind="answer") }}')
+    .then(res => res.json())
+    .then(data => {
+    document.getElementById('answer').innerHTML = data.html;
+    });
+fetch('{{ url_for("pdf.generate", report_index=report_index, student_index=student_index, kind="detail") }}')
+    .then(res => res.json())
+    .then(data => {
+    document.getElementById('detail').innerHTML = data.html;
+    });
+</script>
+
+
 {% endblock %}
 

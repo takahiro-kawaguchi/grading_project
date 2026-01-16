@@ -1,30 +1,81 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/static/style.css" rel="stylesheet">
     {% block additional_css %}{% endblock %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
     <title>{% block title %}PDF Viewer{% endblock %}</title>
 </head>
+
 <body>
 
     <header>
-{% block navigation %}{% endblock %}
+{% block navigation %}
+        <nav class="fixed-top navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarNav">
+            
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for(request.blueprint + '.index') }}">課題一覧</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for(request.blueprint + '.student_list', report_index=report_index) }}">提出一覧</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if student_index == 0 %}disabled{% endif %}" id="prev-report-link"
+                               href="{% if student_index > 0 %}{{ url_for(request.blueprint + '.view_submission', student_index=student_index-1, report_index=report_index) }}{% else %}#{% endif %}">
+                               前のレポート
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if student_index >= total_students - 1 %}disabled{% endif %}" id="next-report-link"
+                               href="{% if student_index < total_students - 1 %}{{ url_for(request.blueprint + '.view_submission', student_index=student_index+1, report_index=report_index) }}{% else %}#{% endif %}">
+                               次のレポート
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="next-unfinished-report-link">
+                               次の未完了レポート
+                            </a>
+                        </li>
+                    </ul>
+                    </div>
+                </div>
+        </nav>
+{% endblock %}
     </header>
     <main class="container">
         <div class="row">
             <div class="col-8">
                 {%block maincontent %}{% endblock %}
             </div>
-            <div class="col-4">
+            <div class="col-4 sticky-sidebar">
+{%block sidecontent_basic %}
+                <div class="form-check">
+                    <input type="checkbox" id="setting-auto-transition" class="form-check-input pref-storage">
+                    <label class="form-check-label" for="setting-auto-transition">自動ページ遷移</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" id="setting-confirm-required" class="form-check-input pref-storage">
+                    <label class="form-check-label" for="setting-confirm-required">遷移時に確認ダイアログを表示</label>
+                </div>
+                <h2>{{report_name}}</h2>
+                <p>{{student_index+1}}/{{total_students}}</p>
+                <h3>{{student_name}}</h3>
+{% endblock %}
                 {%block sidecontent %}{% endblock %}
             </div>
         </div>
 
     </main>
     {%block scripts %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+
 </body>
+
 </html>

@@ -18,8 +18,12 @@ def create_app():
         # PDFフォルダのスキャン
         pdf_path = app.config['PDF_BASE_DIR']
         raw_pdf_list = unzip_if_needed_and_list_folders(pdf_path)
-        from grader_app.pdf_grader.utils import extract_keys
-        app.config['PDF_LIST'] = sorted(raw_pdf_list, key=extract_keys)
+        from grader_app.pdf_grader.utils import get_report_list
+        print("Raw PDF List:", raw_pdf_list)
+        pdf_list = get_report_list(raw_pdf_list)
+        print("Processed PDF List:", pdf_list)
+        app.config['PDF_LIST'] = pdf_list
+        app.config['RAW_PDF_LIST'] = raw_pdf_list
         
         # Codeフォルダのスキャン
         code_path = app.config['CODE_BASE_DIR']
@@ -32,5 +36,8 @@ def create_app():
     from .pdf_grader.routes import pdf_bp
     app.register_blueprint(code_bp)
     app.register_blueprint(pdf_bp)
+
+    from .main.routes import main_bp
+    app.register_blueprint(main_bp)
 
     return app
