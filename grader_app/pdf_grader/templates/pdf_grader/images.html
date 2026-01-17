@@ -1,6 +1,10 @@
 <h2>{{ kind_name }}</h2>
-{% for image_path in images %}
-    <div class="image-container">
-        <img src="{{ url_for('static', filename=image_path) }}" alt="PDF Page" class="pdf-image">
-    </div>
-{% endfor %}
+{% if images %}
+    {% for image_path in images %}
+        <div class="image-container">
+            <img src="{{ url_for('static', filename=image_path) }}" alt="PDF Page" class="pdf-image">
+        </div>
+    {% endfor %}
+{% else %}
+    <p><em class="warning">{{ kind_name }}は提出されていません．</em></p>
+{% endif %}

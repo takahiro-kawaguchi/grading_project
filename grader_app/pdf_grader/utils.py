@@ -142,16 +142,18 @@ def get_submission(report_name, author_name, kind_name, rotate=0):
     raw_dir = current_app.config['RAW_PDF_LIST']
     filtered_raw_dir = [s for s in raw_dir if report_name in s and kind_name in s]
     if len(filtered_raw_dir) > 1:
-        print(f"警告: {author_name} の {kind_name} に該当するディレクトリが複数見つかりました。最初のものを使用します。")
+        raise Exception(f"警告: {author_name} の {kind_name} に該当するディレクトリが複数見つかりました。")
     if len(filtered_raw_dir) == 0:
         print(f"警告: {author_name} の {kind_name} に該当するディレクトリが見つかりませんでした。")
+        return []
     
     submissions = os.listdir(os.path.join(base_dir, filtered_raw_dir[0]))
     filtered_submissions = [s for s in submissions if author_name in s]
     if len(filtered_submissions) > 1:
-        print(f"警告: {author_name} の提出物が複数見つかりました。最初のものを使用します。")
+        raise Exception(f"警告: {author_name} の提出物が複数見つかりました。")
     if len(filtered_submissions) == 0:
         print(f"警告: {author_name} の提出物が見つかりませんでした。")
+        return []
     
     report = filtered_raw_dir[0]
     author = filtered_submissions[0]

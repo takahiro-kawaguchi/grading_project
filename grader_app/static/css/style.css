@@ -122,3 +122,9 @@ ul{
     max-height: calc(100vh - 80px); /* ビューポートの高さからヘッダー分を引く */
     overflow-y: auto;
 }
+
+.warning {
+    color: rgb(255, 75, 0);
+    font-weight: bold;
+    font-style: normal;
+}

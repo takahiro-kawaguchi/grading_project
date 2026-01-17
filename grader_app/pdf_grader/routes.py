@@ -14,7 +14,7 @@ pdf_bp = Blueprint(
 def index():
     sorted_dirlist = current_app.config['PDF_LIST']
     finished = [True for report in sorted_dirlist]
-    return render_template("dirlist.html", dirlist=sorted_dirlist, finished=finished)
+    return render_template("pdf_grader/reportlist.html", dirlist=sorted_dirlist, finished=finished)
 
 @pdf_bp.route('<int:report_index>/students/')
 def student_list(report_index):
