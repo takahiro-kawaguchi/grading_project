@@ -3,7 +3,7 @@ from grader_app.pdf_grader.utils import get_students, get_submission
 from flask import jsonify
 import os
 import grader_app.pdf_grader.utils
-from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json
+from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json, check_all_grades_entered, find_next_unfinished_student
 
 pdf_bp = Blueprint(
     'pdf', __name__, 
@@ -31,16 +31,26 @@ def viewer(report_index, student_index):
     rotate = request.args.get("rotate", default=0, type=int) % 4
     problems = load_problems_from_json('pdf', current_app.config['PDF_LIST'][report_index])
     grades = load_grades_from_json('pdf', current_app.config['PDF_LIST'][report_index], get_students(report_index)[student_index])
+    student_names = get_students(report_index)
+    next_unfinished_index, next_unfinished_name = find_next_unfinished_student(
+        'pdf',
+        current_app.config['PDF_LIST'][report_index],
+        student_names,
+        problems,
+        student_index
+    )
     return render_template(
         "pdf_grader/viewer.html",
         report_index=report_index,
         report_name = current_app.config['PDF_LIST'][report_index],
         student_index=student_index,
-        student_name=get_students(report_index)[student_index],
-        total_students=len(get_students(report_index)),
+        student_name=student_names[student_index],
+        total_students=len(student_names),
         back_url=url_for('pdf.viewer', report_index=report_index, student_index=student_index, rotate=rotate),
         problems=problems,
-        gardes=grades
+        gardes=grades,
+        rotate=rotate,
+        next_unfinished_index=next_unfinished_index,
     )
 
 @pdf_bp.route('generate/<int:report_index>/<int:student_index>/<kind>/')
@@ -108,7 +118,46 @@ def save_grades(report_index, student_index):
         student_name = get_students(report_index)[student_index]
         report_name = current_app.config['PDF_LIST'][report_index]
         save_grades_to_json('pdf', report_name, student_name, grades)
-        return jsonify({"status": "success"}), 200
+        finished = check_all_grades_entered(load_problems_from_json('pdf', report_name), grades)
+        if finished:
+            print(f"All grades entered for student: {student_name} in report: {report_name}")
+            return jsonify({"status": "finished"}), 200
+        else:
+            return jsonify({"status": "success"}), 200
     except Exception as e:
         print(f"Error saving grades: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@pdf_bp.route('<int:report_index>/check_finished/')
+def check_finished(report_index):
+    try:
+        report_name = current_app.config['PDF_LIST'][report_index]
+        student_list = get_students(report_index)
+        finished_status = []
+        problems = load_problems_from_json('pdf', report_name)
+        for student_name in student_list:
+            grades = load_grades_from_json('pdf', report_name, student_name)
+            finished = check_all_grades_entered(problems, grades)
+            finished_status.append(finished)
+        return jsonify({"finished": finished_status}), 200
+    except Exception as e:
+        print(f"Error checking finished status: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@pdf_bp.route('<int:report_index>/check_all_finished/')
+def check_all_finished(report_index):
+    try:
+        report_name = current_app.config['PDF_LIST'][report_index]
+        student_list = get_students(report_index)
+        problems = load_problems_from_json('pdf', report_name)
+        all_finished = True
+        for student_name in student_list:
+            grades = load_grades_from_json('pdf', report_name, student_name)
+            finished = check_all_grades_entered(problems, grades)
+            if not finished:
+                all_finished = False
+                break
+        return jsonify({"all_finished": all_finished}), 200
+    except Exception as e:
+        print(f"Error checking all finished status: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500

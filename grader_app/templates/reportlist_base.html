@@ -7,14 +7,16 @@
 [<a href="{{ url_for('main.reload_reports') }}">リスト再読み込み</a>]
 <ul>
     {% for d in dirlist %}
-    <li><a href="./{{loop.index0}}/students/">{{d}}</a>
-        {% if finished[loop.index0] %}
-        <span class="check">
-            <i class="bi bi-check-square-fill"></i>
+    <li><a href="{{ url_for(request.blueprint + '.student_list', report_index=loop.index0) }}">{{d}}</a>
+        <span id="status-{{loop.index0}}" class="status-text text-secondary" data-check-url="{{ url_for(request.blueprint + '.check_all_finished', report_index=loop.index0) }}">
+            <i class="bi bi-arrow-repeat spin-icon"></i>
         </span>
-        {% endif %}
         [<a href="{{ url_for(request.blueprint + '.edit_problems', report_index=loop.index0) }}">問題編集</a>]
     </li>
     {% endfor %}
 </ul>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/reportlist.js') }}"></script>
 {% endblock %}

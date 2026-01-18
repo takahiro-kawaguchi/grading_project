@@ -39,9 +39,17 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="next-unfinished-report-link">
+                            {% if next_unfinished_index is not none %}
+                            <a class="nav-link" id="next-unfinished-report-link"
+                               href="{{ url_for(request.blueprint + '.viewer', student_index=next_unfinished_index, report_index=report_index) }}">
                                次の未完了レポート
                             </a>
+                            {% else %}
+                            <a class="nav-link" id="next-unfinished-report-link"
+                               href="{{ url_for(request.blueprint + '.student_list', report_index=report_index) }}">
+                               次の未完了レポート
+                            </a>
+                            {% endif %} 
                         </li>
                     </ul>
                     </div>
@@ -116,8 +124,9 @@
         </div>
 
     </main>
-    {%block scripts %}{% endblock %}
-    <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+    {%block scripts %}
+        <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+    {% endblock %}
 
 </body>
 

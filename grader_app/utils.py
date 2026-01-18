@@ -78,3 +78,22 @@ def save_grades_to_json(report_type, report_name, student_name, grades):
     GRADES_FILE = os.path.join(dirname, f"{student_name}.json")
     with open(GRADES_FILE, 'w', encoding='utf-8') as f:
         json.dump(grades, f, ensure_ascii=False, indent=4)
+
+def check_all_grades_entered(problems, grades):
+    for problem_id in problems['order']:
+        if f"grade_{problem_id}" not in grades:
+            return False
+    return True
+
+def find_next_unfinished_student(report_type, report_name, student_names, problems, current_student_index):
+    for idx in range(current_student_index + 1, len(student_names)):
+        student_name = student_names[idx]
+        grades = load_grades_from_json(report_type, report_name, student_name)
+        if not check_all_grades_entered(problems, grades):
+            return idx, student_name
+    for idx in range(0, current_student_index):
+        student_name = student_names[idx]
+        grades = load_grades_from_json(report_type, report_name, student_name)
+        if not check_all_grades_entered(problems, grades):
+            return idx, student_name
+    return None, None

@@ -1,5 +1,9 @@
 {% extends "viewer_base.html" %}
 
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('pdf.static', filename='pdf_grader/css/viewer.css') }}">
+{% endblock %}
+
 {% block maincontent %}
     <h1>PDF Viewer</h1>
     <div id="answer"><h2>解答のみ</h2>
@@ -8,9 +12,14 @@
     <div id="detail"><h2>詳細</h2>
         <p>画像の処理中です <span class="status-text text-secondary"><i class="bi bi-arrow-repeat spin-icon"></i></span></p>
     </div>
+
+<div id="lightbox-overlay" onclick="closeLightbox()">
+    <img id="lightbox-image" src="">
+</div>
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
 fetch('{{ url_for("pdf.generate", report_index=report_index, student_index=student_index, kind="answer") }}')
     .then(res => res.json())
@@ -23,7 +32,6 @@ fetch('{{ url_for("pdf.generate", report_index=report_index, student_index=stude
     document.getElementById('detail').innerHTML = data.html;
     });
 </script>
-
-
+<script src='{{url_for("pdf.static", filename="pdf_grader/js/viewer.js")}}'></script>
 {% endblock %}
 

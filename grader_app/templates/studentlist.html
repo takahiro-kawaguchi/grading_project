@@ -16,17 +16,18 @@
 
 {% block content %}
 <h1>{{report}}</h1>
-<ul>
+<ul id="student-list" data-check-url="{{url_for(request.blueprint + '.check_finished', report_index=report_index)}}">
     {% for a in student_list %}
     <li>
         <a href="{{ url_for(request.blueprint + '.viewer', report_index=report_index, student_index=loop.index0) }}">{{a}}</a>
-        <span class="check">
-            {%if finished[loop.index0]%}
-            <i class="bi bi-check-square-fill"></i>
-            {%endif%}
+        <span id="status-{{loop.index0}}" class="status-text text-secondary">
+            <i class="bi bi-arrow-repeat spin-icon"></i>
         </span>
     </li>
     {% endfor %}
 </ul>
 {% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/studentlist.js') }}"></script>
+{% endblock %}

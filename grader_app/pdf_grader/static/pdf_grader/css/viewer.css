@@ -1,0 +1,54 @@
+/* コンテナ：回転時に高さをJSで制御する */
+.image-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: height 0.1s ease;
+    background: #f8f9fa;
+}
+
+.pdf-image {
+    width: 100%;
+    height: auto;
+    cursor: zoom-in;
+    transition: transform 0.1s ease;
+    transform-origin: center center;
+}
+
+/* 回転ボタンの見た目 */
+.rotate-overlay {
+    position: absolute;
+    top: 0; bottom: 0; width: 15%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0); color: white; cursor: pointer;
+    transition: background 0.2s; z-index: 10;
+}
+.rotate-overlay:hover { background: rgba(0,0,0,0.3); }
+.rotate-overlay.left { left: 0; }
+.rotate-overlay.right { right: 0; }
+.rotate-label {
+    opacity: 0; background: rgba(0,0,0,0.6); padding: 5px 10px;
+    border-radius: 20px; font-size: 0.8rem; transition: opacity 0.2s;
+}
+.rotate-overlay:hover .rotate-label { opacity: 1; }
+
+/* ライトボックス */
+#lightbox-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 10000; cursor: zoom-out;
+    justify-content: center; align-items: center;
+}
+
+#lightbox-image {
+    /* 画面内に収めるための設定 */
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain; 
+    
+    transition: transform 0.2s ease;
+    max-width: none;
+    max-height: none;
+}
