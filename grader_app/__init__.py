@@ -1,5 +1,7 @@
 import os
 from flask import Flask
+from grader_app.utils import refresh_app_config
+
 
 def create_app():
     app = Flask(__name__)
@@ -13,23 +15,7 @@ def create_app():
         os.makedirs(path, exist_ok=True)
 
     with app.app_context():
-        from grader_app.utils import unzip_if_needed_and_list_folders
-        
-        # PDFフォルダのスキャン
-        pdf_path = app.config['PDF_BASE_DIR']
-        raw_pdf_list = unzip_if_needed_and_list_folders(pdf_path)
-        from grader_app.pdf_grader.utils import get_report_list
-        print("Raw PDF List:", raw_pdf_list)
-        pdf_list = get_report_list(raw_pdf_list)
-        print("Processed PDF List:", pdf_list)
-        app.config['PDF_LIST'] = pdf_list
-        app.config['RAW_PDF_LIST'] = raw_pdf_list
-        
-        # Codeフォルダのスキャン
-        code_path = app.config['CODE_BASE_DIR']
-        raw_code_list = unzip_if_needed_and_list_folders(code_path)
-        from grader_app.code_grader.utils import extract_keys
-        app.config['CODE_LIST'] = sorted(raw_code_list, key=extract_keys)
+        refresh_app_config(app)
 
     # Blueprintの登録（既存の通り）
     from .code_grader.routes import code_bp

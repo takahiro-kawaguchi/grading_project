@@ -10,9 +10,6 @@
     </div>
 {% endblock %}
 
-{% block sidecontent %}
-{% endblock %}
-
 {% block scripts %}
 <script>
 fetch('{{ url_for("pdf.generate", report_index=report_index, student_index=student_index, kind="answer") }}')

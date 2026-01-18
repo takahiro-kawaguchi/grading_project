@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, current_app, request
+from flask import Blueprint, render_template, current_app, request, url_for
 from grader_app.pdf_grader.utils import get_students, get_submission
 from flask import jsonify
 import os
+import grader_app.pdf_grader.utils
+from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json
 
 pdf_bp = Blueprint(
     'pdf', __name__, 
@@ -25,8 +27,10 @@ def student_list(report_index):
     return render_template("studentlist.html", student_list=students, report_index=report_index, report=report, finished=finished)
 
 @pdf_bp.route('<int:report_index>/<int:student_index>/')
-def view_submission(report_index, student_index):
+def viewer(report_index, student_index):
     rotate = request.args.get("rotate", default=0, type=int) % 4
+    problems = load_problems_from_json('pdf', current_app.config['PDF_LIST'][report_index])
+    grades = load_grades_from_json('pdf', current_app.config['PDF_LIST'][report_index], get_students(report_index)[student_index])
     return render_template(
         "pdf_grader/viewer.html",
         report_index=report_index,
@@ -34,6 +38,9 @@ def view_submission(report_index, student_index):
         student_index=student_index,
         student_name=get_students(report_index)[student_index],
         total_students=len(get_students(report_index)),
+        back_url=url_for('pdf.viewer', report_index=report_index, student_index=student_index, rotate=rotate),
+        problems=problems,
+        gardes=grades
     )
 
 @pdf_bp.route('generate/<int:report_index>/<int:student_index>/<kind>/')
@@ -57,39 +64,51 @@ def generate(report_index, student_index, kind):
     )
     return jsonify({'html': html})
 
+@pdf_bp.route('<int:report_index>/edit_problems/')
+def edit_problems(report_index):
+    back_url = request.args.get('back_url', url_for('pdf.index'))
+    return render_template(
+        "edit_problems.html",
+        report_index=report_index,
+        report_name=current_app.config['PDF_LIST'][report_index],
+        back_url=back_url,
+        data = load_problems_from_json('pdf', current_app.config['PDF_LIST'][report_index])
+    )
 
+@pdf_bp.route('<int:report_index>/save_problems/', methods=['POST'])
+def save_problems(report_index):
+    try:
+        client_data = request.json
+        new_order = client_data['order']
+        new_problems = client_data['problems']
 
-    # pdfs = os.listdir(os.path.join(basedir, sorted_dirlist[report_index], student))
-    # img_name = student
-    # pdf_path_list = [os.path.join(basedir, sorted_dirlist[report_index], student, pdf) for pdf in pdfs]
-    # images = convert_pdf_to_images(pdf_path_list, sorted_dirlist[report_index], img_name)
-    # if rotate != 0:
-    #     images = rotate_images(images, rotate)
-    # marks = load_marks(sorted_dirlist[report_index], student)
-    # problems = load_problem_list(sorted_dirlist[report_index])
-    # myurl = f"'/pdf/{report_index}/{student_index}/{page_num}?question={question}&rotate={rotate}&v={version}'"
+        storage = load_problems_from_json('pdf', current_app.config['PDF_LIST'][report_index])
+        
+        storage['order'] = new_order
+        storage['problems'] = new_problems
+        
+        # for student_id in storage['grades']:
+        #     updated_student_grades = {}
+        #     for q_id in new_order:
+        #         updated_student_grades[q_id] = storage['grades'][student_id].get(q_id, None)
+        #     storage['grades'][student_id] = updated_student_grades
 
-    # if page_num >= len(images):
-    #     return "No more pages."
-    
+        save_problems_to_json("pdf", current_app.config['PDF_LIST'][report_index], storage)
+        return jsonify({"status": "success", "message": "保存が完了しました"}), 200
+    except Exception as e:
+        print(f"Error saving problems: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-    # return render_template(
-    #     "viewer.html",
-    #     image_path=images[page_num],
-    #     report_index=report_index,
-    #     student_index=student_index,
-    #     report=sorted_dirlist[report_index],
-    #     student=student,
-    #     page_num=page_num,
-    #     total_pages=len(images),
-    #     total_pdfs=len(pdfs),
-    #     total_students=len(student_list),
-    #     marks=marks,
-    #     question=question,
-    #     problems=problems,
-    #     problems_num=len(problems),
-    #     myurl=myurl,
-    #     auto_next=auto_next,
-    #     confirm_next=auto_next_check,
-    #     rotate=rotate
-    # )
+@pdf_bp.route('<int:report_index>/<int:student_index>/save_grades', methods=['POST'])
+def save_grades(report_index, student_index):
+    try:
+        received = request.json
+        grades = received.get('grades', {}) # {"grade_q_1": "circle", "grade_q_2": "cross", ...}
+
+        student_name = get_students(report_index)[student_index]
+        report_name = current_app.config['PDF_LIST'][report_index]
+        save_grades_to_json('pdf', report_name, student_name, grades)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"Error saving grades: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500

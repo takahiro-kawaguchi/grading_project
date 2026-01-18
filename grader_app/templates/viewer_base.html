@@ -28,13 +28,13 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url_for(request.blueprint + '.student_list', report_index=report_index) }}">提出一覧</a></li>
                         <li class="nav-item">
                             <a class="nav-link {% if student_index == 0 %}disabled{% endif %}" id="prev-report-link"
-                               href="{% if student_index > 0 %}{{ url_for(request.blueprint + '.view_submission', student_index=student_index-1, report_index=report_index) }}{% else %}#{% endif %}">
+                               href="{% if student_index > 0 %}{{ url_for(request.blueprint + '.viewer', student_index=student_index-1, report_index=report_index) }}{% else %}#{% endif %}">
                                前のレポート
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if student_index >= total_students - 1 %}disabled{% endif %}" id="next-report-link"
-                               href="{% if student_index < total_students - 1 %}{{ url_for(request.blueprint + '.view_submission', student_index=student_index+1, report_index=report_index) }}{% else %}#{% endif %}">
+                               href="{% if student_index < total_students - 1 %}{{ url_for(request.blueprint + '.viewer', student_index=student_index+1, report_index=report_index) }}{% else %}#{% endif %}">
                                次のレポート
                             </a>
                         </li>
@@ -68,7 +68,50 @@
                 <p>{{student_index+1}}/{{total_students}}</p>
                 <h3>{{student_name}}</h3>
 {% endblock %}
-                {%block sidecontent %}{% endblock %}
+{%block sidecontent %}
+                <div class="problems">
+                    <form id="problems-form" data-save-url="{{ url_for(request.blueprint + '.save_grades', report_index=report_index, student_index=student_index) }}">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>◯</th>
+                                <th>△</th>
+                                <th>✕</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+{% for q_id in problems.order %}
+    {% set problem_text = problems.problems[q_id] %}
+    <tr>
+        <td>{{ problem_text }}</td>
+        <td>
+            <input class="form-check-input" type="radio" 
+                   name="grade_{{ q_id }}" value="circle" 
+                   {% if gardes['grade_' + q_id] == 'circle' %}checked{% endif %}>
+        </td>
+        <td>
+            <input class="form-check-input" type="radio" 
+                   name="grade_{{ q_id }}" value="triangle" 
+                   {% if gardes['grade_' + q_id] == 'triangle' %}checked{% endif %}>
+        </td>
+        <td>
+            <input class="form-check-input" type="radio" 
+                   name="grade_{{ q_id }}" value="cross" 
+                   {% if gardes['grade_' + q_id] == 'cross' %}checked{% endif %}>
+        </td>
+        <td><button type="button" class="btn btn-warning clear-btn" data-target="grade_{{ q_id }}">クリア</button></td>
+    </tr>
+{% endfor %}
+                        </tbody>
+                    </table>
+                    </form>
+                </div>
+{% endblock %}
+{%block sidecontent_extra %}
+                <p><a href="{{ url_for(request.blueprint + '.edit_problems', report_index=report_index, back_url=back_url) }}">採点項目編集</a></p>
+{% endblock %}
             </div>
         </div>
 

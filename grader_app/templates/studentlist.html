@@ -19,7 +19,7 @@
 <ul>
     {% for a in student_list %}
     <li>
-        <a href="/pdf/{{report_index}}/{{loop.index0}}/">{{a}}</a>
+        <a href="{{ url_for(request.blueprint + '.viewer', report_index=report_index, student_index=loop.index0) }}">{{a}}</a>
         <span class="check">
             {%if finished[loop.index0]%}
             <i class="bi bi-check-square-fill"></i>
