@@ -35,20 +35,28 @@
 }
 .rotate-overlay:hover .rotate-label { opacity: 1; }
 
-/* ライトボックス */
+
 #lightbox-overlay {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9); z-index: 10000; cursor: zoom-out;
-    justify-content: center; align-items: center;
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.95); /* 少し濃くして集中しやすく */
+    z-index: 10000;
+    overflow-y: scroll; /* 常にスクロールバー枠を確保してガタつき防止 */
+    cursor: zoom-out;
+    padding: 0; /* マージンで制御するためパディングは0 */
 }
 
 #lightbox-image {
-    /* 画面内に収めるための設定 */
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain; 
-    
-    transition: transform 0.2s ease;
-    max-width: none;
-    max-height: none;
+    display: block;
+    width: 100%; /* 常に親(content)の幅に従う */
+    height: auto;
+    transition: transform 0.3s ease;
+    transform-origin: center center;
+}
+
+#lightbox-content {
+    position: relative;
+    transition: height 0.3s ease;
 }
