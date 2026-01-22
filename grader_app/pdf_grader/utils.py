@@ -6,6 +6,8 @@ from flask import current_app
 from pathlib import Path
 from PIL import Image
 import pandas as pd
+import json
+from datetime import datetime
 
 
 def extract_keys(filename):
@@ -194,6 +196,7 @@ def get_report_data_context(mode='status'):
     from grader_app.utils import get_enrolled_students
     ratio_detail_only = current_app.config.get('RATIO_DETAIL_ONLY', 0.5)
     ratio_answer_only = current_app.config.get('RATIO_ANSWER_ONLY', 0.5)
+    ratio_late = current_app.config.get('RATIO_LATE', 0.8)
     
     df_students = get_enrolled_students('pdf')
     if df_students is None:
@@ -201,6 +204,8 @@ def get_report_data_context(mode='status'):
 
     report_list = current_app.config['PDF_LIST']
     all_unlisted_data = []
+
+    submission_files = [f for f in os.listdir(current_app.config['PDF_BASE_DIR']) if f.endswith(".json")]
 
     for i, report_name in enumerate(report_list):
         scores_data = get_scores(i)
@@ -210,6 +215,22 @@ def get_report_data_context(mode='status'):
         students_names = get_students(i)
         current_report_rows = []
         
+        submission_file_detail = [f for f in submission_files if report_name.split("-")[1] in f and '詳細' in f]
+        submission_file_answer = [f for f in submission_files if report_name.split("-")[1] in f and '解答のみ' in f]
+
+        if len(submission_file_detail) == 0:
+            submission_date_detail = {}
+        else:
+            submission_date_detail = json.load(open(os.path.join(current_app.config['PDF_BASE_DIR'], submission_file_detail[0]), 'r', encoding='utf-8') )
+        if len(submission_file_answer) == 0:
+            submission_date_answer = {}
+        else:
+            submission_date_answer = json.load(open(os.path.join(current_app.config['PDF_BASE_DIR'], submission_file_answer[0]), 'r', encoding='utf-8') )
+        
+        # print(submission_date_detail)
+        deadline_detail = submission_date_detail.get("deadline", "")
+        deadline_answer = submission_date_answer.get("deadline", "")
+
         for student_name in students_names:
             parts = student_name.split()
             number = parts[0].upper().strip()
@@ -218,10 +239,21 @@ def get_report_data_context(mode='status'):
             sub_detail = issubmitted(report_name, student_name, '詳細')
             sub_answer = issubmitted(report_name, student_name, '解答のみ')
             
+            is_late = False
+            if sub_detail:
+                date_detail = submission_date_detail["submissions"][number]
+                is_late = check_delay(deadline_detail, date_detail)
+            if sub_answer:
+                date_answer = submission_date_answer["submissions"][number]
+                is_late = is_late or check_delay(deadline_answer, date_answer)
+
+
+
             if mode == 'status':
-                if sub_detail and sub_answer: val = "◎"
-                elif sub_detail: val = "詳"
-                elif sub_answer: val = "答"
+                suffix = "（遅）" if is_late else ""
+                if sub_detail and sub_answer: val = "◎"+suffix
+                elif sub_detail: val = "詳"+suffix
+                elif sub_answer: val = "答"+suffix
                 else: val = "×"
             else: # scores mode
                 base_score = scores.get(student_name, 0)
@@ -229,6 +261,9 @@ def get_report_data_context(mode='status'):
                 elif sub_detail: val = base_score * ratio_detail_only
                 elif sub_answer: val = base_score * ratio_answer_only
                 else: val = 0
+
+                if is_late:
+                    val = val * ratio_late
             
             current_report_rows.append({'学籍番号': number, '氏名': name, report_name: val})
 
@@ -309,3 +344,32 @@ def get_report_data_context(mode='status'):
         "mode": mode
     }
 
+
+def parse_japanese_date(date_str):
+    """
+    「2025年 10月 9日(木曜日) 17:23」のような形式をdatetimeに変換する
+    """
+    # 正規表現で数字部分だけを抽出する (年, 月, 日, 時, 分)
+    match = re.search(r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日.*?\s*(\d{1,2}):(\d{1,2})', date_str)
+    
+    if match:
+        year, month, day, hour, minute = map(int, match.groups())
+        return datetime(year, month, day, hour, minute)
+    return None
+
+def check_delay(deadline_str, submission_str):
+    """
+    遅延判定メインロジック
+    """
+    deadline = parse_japanese_date(deadline_str)
+    submission = parse_japanese_date(submission_str)
+
+    if not deadline or not submission:
+        return "日付形式が正しくありません"
+
+    if submission > deadline:
+        # delay = submission - deadline
+        # 1時間以上の遅延、1分以上の遅延など詳細を出すことも可能
+        return True
+    else:
+        return False

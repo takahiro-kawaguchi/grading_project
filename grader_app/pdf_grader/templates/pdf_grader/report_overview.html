@@ -21,7 +21,7 @@
     {% if col_name in report_list %}
         {# 各課題の点数列 #}
         {% if mode == 'status' %}
-            <td class="{% if val == '◎' %}bg-perfect{% elif val == '詳' %}bg-detail{% elif val == '答' %}bg-answer{% elif val == '×' %}bg-none{% endif %}">
+            <td class="{% if '◎' in val %}bg-perfect{% elif '詳' in val %}bg-detail{% elif '答' in val %}bg-answer{% elif '×' in val %}bg-none{% endif %} {% if '遅' in val %}bg-late{% endif %}">
                 {{ val }}
             </td>
         {% else %}

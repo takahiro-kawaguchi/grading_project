@@ -161,7 +161,8 @@ def load_report_settings(app=None):
         'THRESHOLD_B': 70,
         'THRESHOLD_C': 60,
         'RATIO_DETAIL_ONLY': 0.5,
-        'RATIO_ANSWER_ONLY': 0.5
+        'RATIO_ANSWER_ONLY': 0.5,
+        'RATIO_LATE': 0.8
     }
     
     if os.path.exists(os.path.join(app.config['SAVE_DIR'], app.config['REPORT_SETTINGS_FILE'])):
@@ -188,7 +189,8 @@ def save_report_settings_to_file(data, app=None):
         'THRESHOLD_B': int(data.get('b', 70)),
         'THRESHOLD_C': int(data.get('c', 60)),
         'RATIO_DETAIL_ONLY': float(data.get('ratio_detail_only', 0.5)),
-        'RATIO_ANSWER_ONLY': float(data.get('ratio_answer_only', 0.5))
+        'RATIO_ANSWER_ONLY': float(data.get('ratio_answer_only', 0.5)),
+        'RATIO_LATE': float(data.get('ratio_late', 0.8))
     }
     
     # 1. ファイルに保存
@@ -198,3 +200,5 @@ def save_report_settings_to_file(data, app=None):
     # 2. 現在のアプリ設定を更新
     for key, value in settings.items():
         app.config[key] = value
+
+        

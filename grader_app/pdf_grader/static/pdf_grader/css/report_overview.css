@@ -56,3 +56,20 @@
     color: #383d41; 
     text-align: center; 
 }
+
+/* report_overview.css */
+.bg-late {
+    border: 2px solid #fd7e14 !important; /* オレンジ色の枠線 */
+    color: #d9534f; /* 文字を少し赤く */
+    position: relative;
+}
+.bg-late::after {
+    content: "遅";
+    font-size: 0.6em;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #fd7e14;
+    color: white;
+    padding: 1px 2px;
+}
