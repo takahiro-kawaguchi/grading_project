@@ -2,6 +2,7 @@ import os
 import zipfile
 from flask import current_app
 import json
+import glob
 
 def unzip_if_needed_and_list_folders(target_dir):
     print(f"Scanning directory: {target_dir}")
@@ -97,3 +98,36 @@ def find_next_unfinished_student(report_type, report_name, student_names, proble
         if not check_all_grades_entered(problems, grades):
             return idx, student_name
     return None, None
+
+
+def get_enrolled_students(report_type):
+    dirname = current_app.config[f'{report_type.upper()}_BASE_DIR']
+    print(f"Looking for enrolled student files in directory: {dirname}")
+    
+    # .xls と .xlsx 両方に対応できるようにしておくとより安全です
+    target_files = glob.glob(os.path.join(dirname, "*seiseki*.xls*"))
+    
+    print(f"Enrolled student files found: {target_files}")
+    if not target_files:
+        print("エラー: 'seiseki' を含むファイルが見つかりませんでした。")
+        return None
+    if len(target_files) > 1:
+        print("エラー: 'seiseki' を含むファイルが複数見つかりました。")
+        return None
+        
+    target_file = target_files[0]
+    print(f"Loading enrolled students from file: {target_file}")
+    
+    import pandas as pd
+    df = pd.read_excel(target_file)
+
+    # --- ここで元の順番を保持する列を追加 ---
+    # reset_index()により、その時点の行番号が 'index' 列として追加されます
+    # name='original_order' で列名を指定します
+    df = df.reset_index().rename(columns={'index': 'original_order'})
+
+    # 必要な列だけを抽出（追加した original_order を含める）
+    df = df[['original_order', '学籍番号', '氏名']]
+    df['学籍番号'] = df['学籍番号'].astype(str).str.upper().str.strip()
+    # print(df.head())
+    return df

@@ -1,1 +1,7 @@
 {% extends "reportlist_base.html" %}
+
+{% block content %}
+{{ super() }}
+
+[<a href="{{ url_for(request.blueprint + '.report_status') }}">提出状況を見る</a>]
+{% endblock %}
