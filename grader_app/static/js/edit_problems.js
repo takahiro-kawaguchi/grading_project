@@ -10,11 +10,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addBtn').addEventListener('click', () => {
         const tempId = "q_" + Date.now();
         const html = `
-            <li class="list-item" data-id="${tempId}">
-                <span class="handle">⠿</span>
-                <textarea class="editable problem-text" rows="3"></textarea>
-                <button class="btn btn-outline-danger del-btn">削除</button>
-            </li>`;
+        <li class="list-item" data-id="${tempId}">
+            <span class="handle">⠿</span>
+            <textarea class="editable problem-text" rows="3"></textarea>
+            
+            <div class="point-container">
+                <input type="number" class="point-input" value="0" min="0" step="1">
+                <span class="point-unit">点</span>
+            </div>
+
+            <button class="btn btn-outline-danger del-btn">削除</button>
+        </li>`;
         list.insertAdjacentHTML('beforeend', html);
     });
 
@@ -36,12 +42,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const order = [];
             const problems = {};
+            const points = {};
             
             document.querySelectorAll('.list-item').forEach(item => {
                 const id = item.dataset.id;
                 const text = item.querySelector('.problem-text').value;
+                const pointVal = item.querySelector('.point-input').value;
                 order.push(id);
                 problems[id] = text;
+                points[id] = parseInt(pointVal, 10) || 0;
             });
 
             const save_destination = this.getAttribute('data-save-url');
@@ -50,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(save_destination, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order, problems })
+                body: JSON.stringify({ order, problems, points})
             })
             .then(response => {
                 if (response.ok) {

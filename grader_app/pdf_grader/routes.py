@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, current_app, request, url_for
-from grader_app.pdf_grader.utils import get_students, get_submission, issubmitted
+from grader_app.pdf_grader.utils import get_students, get_submission, get_report_data_context
 from flask import jsonify
 import os
 import grader_app.pdf_grader.utils
@@ -92,11 +92,13 @@ def save_problems(report_index):
         client_data = request.json
         new_order = client_data['order']
         new_problems = client_data['problems']
+        new_points = client_data.get('points', {})
 
         storage = load_problems_from_json('pdf', current_app.config['PDF_LIST'][report_index])
         
         storage['order'] = new_order
         storage['problems'] = new_problems
+        storage['points'] = new_points
         
         # for student_id in storage['grades']:
         #     updated_student_grades = {}
@@ -163,80 +165,26 @@ def check_all_finished(report_index):
         print(f"Error checking all finished status: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
     
+
 @pdf_bp.route('report_status/')
 def report_status():
     try:
-        df_students = get_enrolled_students('pdf')
-        if df_students is None:
+        context = get_report_data_context(mode='status')
+        if context is None:
             return jsonify({"status": "error", "message": "No enrolled student files found."}), 404
-        
-        df_unlisted_students = None
-        report_list = current_app.config['PDF_LIST']
-
-        for i, report_name in enumerate(report_list):
-            students_names = get_students(i) # フォルダ内の学生名リスト
-            status_list = {}
-            name_mapping = {}
-            for student_name in students_names:
-                submission_detail = issubmitted(report_name, student_name, '詳細')
-                submission_answer = issubmitted(report_name, student_name, '解答のみ')
-                
-                # 学籍番号を取得（"学籍番号 氏名" 形式を想定）
-                number = student_name.split(" ")[0].upper().strip()
-                name = " ".join(student_name.split(" ")[1:]).strip() if len(student_name.split(" ")) > 1 else ""
-                
-                if submission_detail and submission_answer:
-                    status = "◎"
-                elif submission_detail:
-                    status = "詳"
-                elif submission_answer:
-                    status = "答"
-                else:
-                    status = "×"
-                status_list[number] = status
-                name_mapping[number] = name
-            
-            # 1. 今回の提出状況をDF化
-            status_df = pd.DataFrame([
-                {'学籍番号': k, '氏名': name_mapping[k], report_name: v} 
-                for k, v in status_list.items()
-            ])            
-            # 2. 名簿本体にマージし、未提出(NaN)を "×" で埋める
-            df_students = pd.merge(df_students, status_df.drop(columns=['氏名']), on='学籍番号', how='left')
-            df_students[report_name] = df_students[report_name].fillna("×")
-            
-            # 3. 名簿外の学生を抽出
-            unlisted_data = status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])]
-            
-            if not unlisted_data.empty:
-                if df_unlisted_students is None:
-                    df_unlisted_students = unlisted_data
-                else:
-                    # 名簿外学生リスト同士をマージ（新しいレポート列を追加していく）
-                    df_unlisted_students = pd.merge(df_unlisted_students, unlisted_data, on=['学籍番号','氏名'], how='outer')
-        
-        # 4. 最後に元の順番でソート
-        df_students = df_students.sort_values('original_order')
-
-        # 名簿外リストも NaN を "×" で埋める（必要であれば）
-        if df_unlisted_students is not None:
-            df_unlisted_students = df_unlisted_students.fillna("×")
-
-        # print("--- Enrolled Students ---")
-        # print(df_students.head())
-        # print("--- Unlisted Students ---")
-        # print(df_unlisted_students.head() if df_unlisted_students is not None else "No unlisted students")
-
-        if df_unlisted_students is not None:
-            df_unlisted_students = df_unlisted_students.fillna("×")
-        context = {
-            "enrolled": df_students.to_dict(orient='records'),
-            "unlisted": df_unlisted_students.to_dict(orient='records') if df_unlisted_students is not None else [],
-            "columns": df_students.columns.tolist()
-        }
-
-        return render_template("pdf_grader/report_status.html", **context) , 200
-
+        return render_template("pdf_grader/report_overview.html", **context), 200
     except Exception as e:
-        print(f"Error getting enrolled students: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@pdf_bp.route('report_scores/')
+def report_scores():
+    try:
+        context = get_report_data_context(mode='scores')
+        if context is None:
+            return jsonify({"status": "error", "message": "No enrolled student files found."}), 404
+        # 必要なら別のテンプレート(report_scores.html)を呼ぶ
+        return render_template("pdf_grader/report_overview.html", **context), 200
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500

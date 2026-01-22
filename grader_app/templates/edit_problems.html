@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/edit_problems.css') }}">
+{% endblock %}
+
 {% block title %}問題編集{% endblock %}
 
 {% block navigation %}
@@ -27,6 +31,14 @@
                     <li class="list-item" data-id="{{ q_id }}">
                         <span class="handle">⠿</span>
                         <textarea class="editable problem-text" rows="3">{{ data.problems[q_id] }}</textarea>
+                        
+                        <div class="point-container">
+                            <input type="number" class="point-input" 
+                                value="{{ data.points[q_id] if data.points else 0 }}" 
+                                min="0" step="1">
+                            <span class="point-unit">点</span>
+                        </div>
+
                         <button class="btn btn-outline-danger del-btn">削除</button>
                     </li>
                     {% endfor %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('pdf.static', filename='pdf_grader/css/report_overview.css') }}">
+{% endblock %}
+
+{% block navigation %}
+<nav class="fixed-top navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for(request.blueprint + '.index') }}">課題一覧</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+
+{# セル表示用のマクロ定義 #}
+{% macro render_cell(val, col_name, report_list, mode) %}
+    {% if col_name in report_list %}
+        {# レポート列の場合の色分けロジック #}
+        {% if mode == 'status' %}
+            {# 提出状況モード #}
+            <td class="{% if val == '◎' %}bg-perfect{% elif val == '詳' %}bg-detail{% elif val == '答' %}bg-answer{% elif val == '×' %}bg-none{% endif %}">
+                {{ val }}
+            </td>
+        {% else %}
+            {# スコアモードの色分け（例：80点以上は緑、50点未満は赤など） #}
+            <td class="{% if val >= 80 %}score-high{% elif val >= 50 %}score-mid{% elif val > 0 %}score-low{% else %}score-zero{% endif %}">
+                {{ val }}
+            </td>
+        {% endif %}
+    {% else %}
+        {# 学籍番号や氏名などの通常列 #}
+        <td>{{ val }}</td>
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+<h1>{{ '提出状況' if mode == 'status' else '得点一覧' }}</h1>
+
+<table class="status-table">
+    <tr class="bg-header">
+        {% for col in columns %} <th>{{ col }}</th> {% endfor %}
+    </tr>
+    {% for row in enrolled %}
+    <tr>
+        {% for col in columns %}
+            {{ render_cell(row[col], col, report_list, mode) }}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+
+{# 名簿外も同様にマクロを使用 #}
+{% if unlisted %}
+<h2 style="color: red; margin-top: 40px;">⚠️ 名簿外の学生</h2>
+<table class="status-table">
+    <tr class="bg-header">
+        {% for col in columns %} <th>{{ col }}</th> {% endfor %}
+    </tr>
+    {% for row in unlisted %}
+    <tr>
+        {% for col in columns %}
+            {{ render_cell(row[col], col, report_list, mode) }}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

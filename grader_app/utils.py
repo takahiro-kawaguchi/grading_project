@@ -131,3 +131,21 @@ def get_enrolled_students(report_type):
     df['学籍番号'] = df['学籍番号'].astype(str).str.upper().str.strip()
     # print(df.head())
     return df
+
+def get_point(report_type, report_name, student_name):
+    problems = load_problems_from_json(report_type, report_name)
+    grades = load_grades_from_json(report_type, report_name, student_name)
+   
+    student_point = 0
+    total_point = 0
+    for problem_id in problems['order']:
+        point = problems.get('points', {}).get(problem_id, 0)
+        total_point += point
+        grade = grades.get(f"grade_{problem_id}", 0)
+        if grade == "circle":
+            student_point += point
+        elif grade == "triangle":
+            student_point += point / 2
+        # else: 0点として加算しない
+        
+    return student_point, total_point

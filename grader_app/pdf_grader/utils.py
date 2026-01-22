@@ -5,6 +5,7 @@ from PyPDF2 import PdfReader
 from flask import current_app
 from pathlib import Path
 from PIL import Image
+import pandas as pd
 
 
 def extract_keys(filename):
@@ -169,3 +170,97 @@ def issubmitted(report_name, student_name, kind_name):
     submissions = os.listdir(os.path.join(base_dir, filtered_raw_dir[0]))
     filtered_submissions = [s for s in submissions if student_name in s]
     return len(filtered_submissions) == 1
+
+
+def get_scores(report_index):
+    from flask import jsonify
+    from grader_app.utils import get_point
+    report_name = current_app.config['PDF_LIST'][report_index]
+    student_list = get_students(report_index)
+    scores = {}
+    for student_name in student_list:
+        point, total_point = get_point('pdf', report_name, student_name)
+        if total_point != 0:
+            point = round(point/total_point * 100, 2)
+        scores[student_name] = point
+    return scores
+
+
+def get_report_data_context(mode='status'):
+    """
+    提出状況またはスコアのデータを生成する共通ヘルパー関数
+    mode: 'status' (◎, 詳, 答, ×) または 'scores' (数値)
+    """
+    from grader_app.utils import get_enrolled_students
+    ratio_detail_only = current_app.config.get('RATIO_DETAIL_ONLY', 0.5)
+    ratio_answer_only = current_app.config.get('RATIO_ANSWER_ONLY', 0.5)
+    
+    df_students = get_enrolled_students('pdf')
+    if df_students is None:
+        return None
+
+    report_list = current_app.config['PDF_LIST']
+    all_unlisted_data = []
+
+    for i, report_name in enumerate(report_list):
+        scores_data = get_scores(i)
+        # get_scoresの戻り値が辞書(scores["data"])か、直接辞書かで調整してください
+        scores = scores_data.get("data", scores_data) if isinstance(scores_data, dict) else scores_data
+        
+        students_names = get_students(i)
+        current_report_rows = []
+        
+        for student_name in students_names:
+            parts = student_name.split()
+            number = parts[0].upper().strip()
+            name = " ".join(parts[1:]).strip() if len(parts) > 1 else ""
+            
+            sub_detail = issubmitted(report_name, student_name, '詳細')
+            sub_answer = issubmitted(report_name, student_name, '解答のみ')
+            
+            if mode == 'status':
+                if sub_detail and sub_answer: val = "◎"
+                elif sub_detail: val = "詳"
+                elif sub_answer: val = "答"
+                else: val = "×"
+            else: # scores mode
+                base_score = scores.get(student_name, 0)
+                if sub_detail and sub_answer: val = base_score
+                elif sub_detail: val = base_score * ratio_detail_only
+                elif sub_answer: val = base_score * ratio_answer_only
+                else: val = 0
+            
+            current_report_rows.append({'学籍番号': number, '氏名': name, report_name: val})
+
+        status_df = pd.DataFrame(current_report_rows)
+        
+        # 名簿内へのマージ
+        df_students = pd.merge(df_students, status_df.drop(columns=['氏名']), on='学籍番号', how='left')
+        fill_val = "×" if mode == 'status' else 0
+        df_students[report_name] = df_students[report_name].fillna(fill_val)
+
+        # 名簿外の抽出
+        unlisted = status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])]
+        all_unlisted_data.append(unlisted)
+
+    # 名簿外学生の集約
+    df_unlisted = None
+    if all_unlisted_data:
+        for temp_df in all_unlisted_data:
+            if df_unlisted is None:
+                df_unlisted = temp_df
+            else:
+                df_unlisted = pd.merge(df_unlisted, temp_df, on=['学籍番号', '氏名'], how='outer')
+        if df_unlisted is not None:
+            df_unlisted = df_unlisted.fillna("×" if mode == 'status' else 0)
+
+    df_students = df_students.sort_values('original_order')
+
+    return {
+        "enrolled": df_students.to_dict(orient='records'),
+        "unlisted": df_unlisted.to_dict(orient='records') if df_unlisted is not None else [],
+        "columns": df_students.columns.tolist(),
+        "report_list": report_list,
+        "mode": mode
+    }
+

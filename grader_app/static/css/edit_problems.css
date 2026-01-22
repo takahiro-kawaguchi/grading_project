@@ -1,0 +1,28 @@
+    .list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #eee;
+        background: #fff;
+    }
+    .problem-text {
+        flex-grow: 1; /* テキストエリアを広げる */
+    }
+    .point-container {
+        display: flex;
+        align-items: center;
+        min-width: 100px;
+    }
+    .point-input {
+        width: 60px;
+        text-align: right;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .point-unit {
+        margin-left: 5px;
+        white-space: nowrap;
+    }

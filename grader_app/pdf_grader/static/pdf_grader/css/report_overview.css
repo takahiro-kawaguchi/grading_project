@@ -1,0 +1,22 @@
+.status-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.status-table th, .status-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+
+/* ステータス別の背景色 */
+.bg-perfect { background-color: #c3e6cb; } /* ◎ 緑 */
+.bg-detail  { background-color: #bee5eb; } /* 詳 青 */
+.bg-answer  { background-color: #ffeeba; } /* 答 黄 */
+.bg-none    { background-color: #f8d7da; } /* × 赤 */
+.bg-header  { background-color: #f2f2f2; font-weight: bold; }
+
+
+/* スコアモード用の色設定 */
+.score-high { background-color: #d4edda; color: #155724; text-align: right; } /* 薄い緑 */
+.score-mid  { background-color: #fff3cd; color: #856404; text-align: right; } /* 薄い黄色 */
+.score-low  { background-color: #f8d7da; color: #721c24; text-align: right; } /* 薄い赤 */
+.score-zero { background-color: #e2e3e5; color: #383d41; text-align: center; } /* グレー */
+
+/* 共通：数値は右寄せにすると表が見やすい */
+.status-table td {
+    padding: 8px;
+    border: 1px solid #ccc;
+}
