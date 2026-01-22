@@ -20,3 +20,39 @@
     padding: 8px;
     border: 1px solid #ccc;
 }
+
+/* S評価（青系） */
+.grade-text-S { 
+    background-color: #cfe2ff; /* 薄い青 */
+    color: #084298;           /* 濃い青 */
+    text-align: right; 
+    font-weight: bold;
+}
+
+/* A評価（緑系） */
+.grade-text-A { 
+    background-color: #d4edda; 
+    color: #155724; 
+    text-align: right; 
+}
+
+/* B評価（黄系） */
+.grade-text-B { 
+    background-color: #fff3cd; 
+    color: #856404; 
+    text-align: right; 
+}
+
+/* C評価（赤系） */
+.grade-text-C { 
+    background-color: #f8d7da; 
+    color: #721c24; 
+    text-align: right; 
+}
+
+/* D評価（グレー系） */
+.grade-text-D { 
+    background-color: #e2e3e5; 
+    color: #383d41; 
+    text-align: center; 
+}

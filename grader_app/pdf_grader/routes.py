@@ -3,8 +3,11 @@ from grader_app.pdf_grader.utils import get_students, get_submission, get_report
 from flask import jsonify
 import os
 import grader_app.pdf_grader.utils
-from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json, check_all_grades_entered, find_next_unfinished_student, get_enrolled_students
+from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json, check_all_grades_entered, find_next_unfinished_student
+from grader_app.utils import load_report_settings, save_report_settings_to_file
 import pandas as pd
+from flask import make_response
+import io
 
 pdf_bp = Blueprint(
     'pdf', __name__, 
@@ -179,6 +182,7 @@ def report_status():
 @pdf_bp.route('report_scores/')
 def report_scores():
     try:
+        load_report_settings()
         context = get_report_data_context(mode='scores')
         if context is None:
             return jsonify({"status": "error", "message": "No enrolled student files found."}), 404
@@ -187,4 +191,40 @@ def report_scores():
     except Exception as e:
         import traceback
         traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+    from flask import make_response
+import io
+
+@pdf_bp.route('download_report_xlsx/')
+def download_report_xlsx():
+    # データを取得
+    context = get_report_data_context(mode='scores')
+    if not context:
+        return "Data not found", 404
+    
+    # 1. 名簿内と名簿外を結合するか、あるいは別シートにするか選べますが
+    #    今回は管理しやすいよう、名簿内(enrolled)をメインに作成します。
+    df = pd.DataFrame(context['enrolled'])
+    
+    # 2. メモリ上にExcelファイルを作成
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='成績一覧')
+    
+    # 3. レスポンスの設定
+    response = make_response(output.getvalue())
+    # ファイル名を .xlsx に変更
+    response.headers["Content-Disposition"] = "attachment; filename=report_scores.xlsx"
+    response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    
+    return response
+
+@pdf_bp.route('save_thresholds/', methods=['POST'])
+def save_thresholds():
+    try:
+        data = request.json
+        save_report_settings_to_file(data)
+        return jsonify({"status": "success", "message": "設定を保存しました"})
+    except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

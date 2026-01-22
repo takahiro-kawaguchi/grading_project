@@ -149,3 +149,52 @@ def get_point(report_type, report_name, student_name):
         # else: 0点として加算しない
         
     return student_point, total_point
+
+
+def load_report_settings(app=None):
+    if app is None:
+        app = current_app
+    """ファイルを読み込んでapp.configに格納する"""
+    default_settings = {
+        'THRESHOLD_S': 90,
+        'THRESHOLD_A': 80,
+        'THRESHOLD_B': 70,
+        'THRESHOLD_C': 60,
+        'RATIO_DETAIL_ONLY': 0.5,
+        'RATIO_ANSWER_ONLY': 0.5
+    }
+    
+    if os.path.exists(os.path.join(app.config['SAVE_DIR'], app.config['REPORT_SETTINGS_FILE'])):
+        try:
+            with open(os.path.join(app.config['SAVE_DIR'], app.config['REPORT_SETTINGS_FILE']), 'r', encoding='utf-8') as f:
+                saved_settings = json.load(f)
+                # デフォルト値をベースに保存された値で上書き
+                default_settings.update(saved_settings)
+        except Exception as e:
+            print(f"設定ファイルの読み込み失敗: {e}")
+            
+    # Flaskのconfigに反映
+    for key, value in default_settings.items():
+        app.config[key] = value
+    return default_settings
+
+def save_report_settings_to_file(data, app=None):
+    if app is None:
+        app = current_app
+    """データをJSONファイルに保存し、app.configも更新する"""
+    settings = {
+        'THRESHOLD_S': int(data.get('s', 90)),
+        'THRESHOLD_A': int(data.get('a', 80)),
+        'THRESHOLD_B': int(data.get('b', 70)),
+        'THRESHOLD_C': int(data.get('c', 60)),
+        'RATIO_DETAIL_ONLY': float(data.get('ratio_detail_only', 0.5)),
+        'RATIO_ANSWER_ONLY': float(data.get('ratio_answer_only', 0.5))
+    }
+    
+    # 1. ファイルに保存
+    with open(os.path.join(app.config['SAVE_DIR'], app.config['REPORT_SETTINGS_FILE']), 'w', encoding='utf-8') as f:
+        json.dump(settings, f, indent=4, ensure_ascii=False)
+        
+    # 2. 現在のアプリ設定を更新
+    for key, value in settings.items():
+        app.config[key] = value

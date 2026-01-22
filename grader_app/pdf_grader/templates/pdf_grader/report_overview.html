@@ -17,30 +17,41 @@
 {% endblock %}
 
 
-{# セル表示用のマクロ定義 #}
 {% macro render_cell(val, col_name, report_list, mode) %}
     {% if col_name in report_list %}
-        {# レポート列の場合の色分けロジック #}
+        {# 各課題の点数列 #}
         {% if mode == 'status' %}
-            {# 提出状況モード #}
             <td class="{% if val == '◎' %}bg-perfect{% elif val == '詳' %}bg-detail{% elif val == '答' %}bg-answer{% elif val == '×' %}bg-none{% endif %}">
                 {{ val }}
             </td>
         {% else %}
-            {# スコアモードの色分け（例：80点以上は緑、50点未満は赤など） #}
-            <td class="{% if val >= 80 %}score-high{% elif val >= 50 %}score-mid{% elif val > 0 %}score-low{% else %}score-zero{% endif %}">
-                {{ val }}
-            </td>
+            {# スコアモード：JSで色を塗るために score-cell クラスを付与 #}
+            <td class="score-cell" style="text-align: right;">{{ val }}</td>
         {% endif %}
+
+    {% elif col_name == '平均点' %}
+            {# 平均点列：JSで色を塗るために average-score-cell クラスを付与 #}
+            <td class="average-score-cell" style="text-align: right;">{{ val }}</td>
+
+    {% elif col_name == '評価' %}
+        {# 評価列：初期状態のクラスを grade-cell に #}
+        <td class="grade-cell" style="text-align: center; font-weight: bold;">{{ val }}</td>
     {% else %}
-        {# 学籍番号や氏名などの通常列 #}
         <td>{{ val }}</td>
     {% endif %}
 {% endmacro %}
 
 {% block content %}
-<h1>{{ '提出状況' if mode == 'status' else '得点一覧' }}</h1>
+<h1>{{ 'レポート提出状況' if mode == 'status' else 'レポート得点一覧' }}</h1>
 
+{% if mode == 'scores' %}
+<div style="margin-bottom: 20px;">
+    {# XLSXダウンロードボタン #}
+    <a href="{{ url_for('pdf.download_report_xlsx') }}" class="btn btn-success">
+        Excel (.xlsx) で保存
+    </a>
+</div>
+{% endif %}
 <table class="status-table">
     <tr class="bg-header">
         {% for col in columns %} <th>{{ col }}</th> {% endfor %}
@@ -69,5 +80,57 @@
     </tr>
     {% endfor %}
 </table>
+{% endif %}
+
+{% if mode == 'scores' %}
+<div class="card p-3 mb-4 shadow-sm">
+    <h5 class="card-title">スコア色分け・評価設定</h5>
+    <div class="row g-3">
+        <div class="col-md-2">
+            <label class="form-label">S (以上)</label>
+            <input type="number" id="threshold-s" class="form-control score-input" value="{{ config['THRESHOLD_S'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">A (以上)</label>
+            <input type="number" id="threshold-a" class="form-control score-input" value="{{ config['THRESHOLD_A'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">B (以上)</label>
+            <input type="number" id="threshold-b" class="form-control score-input" value="{{ config['THRESHOLD_B'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">C (以上)</label>
+            <input type="number" id="threshold-c" class="form-control score-input" value="{{ config['THRESHOLD_C'] }}">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button onclick="saveThresholds()" class="btn btn-primary w-100">設定を保存</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if mode == 'scores' and stats %}
+<div class="card p-3 mb-4 shadow-sm border-primary">
+    <h5 class="card-title">成績分布サマリー</h5>
+    <div class="row text-center">
+        {% for grade, data in stats.items() %}
+        <div class="col">
+            <div class="border rounded p-2">
+                <strong class="h4 grade-text-{{ grade }}">{{ grade }}</strong><br>
+                <span class="h5" id="stat-count-{{ grade }}">{{ data.count }}</span>名<br>
+                <small class="text-muted" id="stat-ratio-{{ grade }}">{{ data.ratio }}%</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
+{% endblock %}
+
+{% block scripts %}
+{% if mode == 'scores' %}
+<script src="{{ url_for('pdf.static', filename='pdf_grader/js/report_overview.js') }}"></script>
 {% endif %}
 {% endblock %}

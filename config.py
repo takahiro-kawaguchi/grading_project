@@ -15,6 +15,8 @@ class Config:
     CODE_LIST = []
     CODE_SAVE_DIR = os.path.join(BASE_DIR, "storage", "save", "code")
     
+    REPORT_SETTINGS_FILE = 'report_settings.json'
+    SAVE_DIR = os.path.join(BASE_DIR, "storage", "save")
     
     # 必要に応じて、自動でフォルダを作成するための設定
     OS_MAKEDIRS = [PDF_BASE_DIR, CODE_BASE_DIR, IMAGE_DIR, PDF_SAVE_DIR, CODE_SAVE_DIR]

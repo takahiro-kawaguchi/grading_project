@@ -1,6 +1,6 @@
 import os
 from flask import Flask
-from grader_app.utils import refresh_app_config
+from grader_app.utils import refresh_app_config, load_report_settings
 
 
 def create_app():
@@ -25,5 +25,7 @@ def create_app():
 
     from .main.routes import main_bp
     app.register_blueprint(main_bp)
+
+    load_report_settings(app)
 
     return app

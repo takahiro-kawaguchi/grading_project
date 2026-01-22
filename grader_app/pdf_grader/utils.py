@@ -254,6 +254,51 @@ def get_report_data_context(mode='status'):
         if df_unlisted is not None:
             df_unlisted = df_unlisted.fillna("×" if mode == 'status' else 0)
 
+    stats = {}
+
+    if mode == 'scores' and not df_students.empty:
+        # report_list に含まれる列（各課題の点数）だけで平均を計算
+        df_students['平均点'] = df_students[report_list].mean(axis=1).round(1)
+        
+        # 評価ロジック
+        def calculate_grade(score):
+            if score >= current_app.config.get('THRESHOLD_S', 90): return 'S' # 90以上をS、それ以外をA~Dに振り分け
+            if score >= current_app.config.get('THRESHOLD_A', 80): return 'A'
+            if score >= current_app.config.get('THRESHOLD_B', 70): return 'B'
+            if score >= current_app.config.get('THRESHOLD_C', 60): return 'C'
+            return 'D'
+        
+        df_students['評価'] = df_students['平均点'].apply(calculate_grade)
+        
+        counts = df_students['評価'].value_counts()
+        total = len(df_students)
+        
+        # S, A, B, C, D の順番で辞書を作成
+        for grade in ['S', 'A', 'B', 'C', 'D']:
+            count = int(counts.get(grade, 0))
+            ratio = round((count / total) * 100, 1) if total > 0 else 0
+            stats[grade] = {'count': count, 'ratio': ratio}
+
+    # 名簿外学生の集約
+    # ... (既存の集約処理) ...
+    if mode == 'scores' and df_unlisted is not None and not df_unlisted.empty:
+        df_unlisted['平均点'] = df_unlisted[report_list].mean(axis=1).round(1)
+        df_unlisted['評価'] = df_unlisted['平均点'].apply(calculate_grade)
+
+    # original_orderでソート
+    df_students = df_students.sort_values('original_order')
+
+    return {
+        "enrolled": df_students.to_dict(orient='records'),
+        "unlisted": df_unlisted.to_dict(orient='records') if df_unlisted is not None else [],
+        "columns": df_students.columns.tolist(),
+        "report_list": report_list,
+        "mode": mode,
+        "stats": stats
+    }
+
+
+
     df_students = df_students.sort_values('original_order')
 
     return {
