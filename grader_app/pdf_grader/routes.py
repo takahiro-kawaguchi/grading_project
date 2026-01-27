@@ -198,8 +198,6 @@ def report_scores():
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
     
-    from flask import make_response
-import io
 
 @pdf_bp.route('download_report_xlsx/')
 def download_report_xlsx():

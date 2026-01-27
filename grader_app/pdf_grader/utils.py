@@ -264,6 +264,7 @@ def get_report_data_context(mode='status'):
 
                 if is_late:
                     val = val * ratio_late
+                val = round(val, 1)
             
             current_report_rows.append({'学籍番号': number, '氏名': name, report_name: val})
 
