@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <textarea class="editable problem-text" rows="3"></textarea>
             <div class="summary-container">正答: 0/0 (0.0%)</div>
             <div class="point-container">
-                <input type="number" class="point-input" value="0" min="0" step="1">
+                <input type="number" class="point-input" value="0" min="0" step="0.1">
                 <span class="point-unit">点</span>
             </div>
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const pointVal = item.querySelector('.point-input').value;
                 order.push(id);
                 problems[id] = text;
-                points[id] = parseInt(pointVal, 10) || 0;
+                points[id] = parseFloat(pointVal) || 0;
             });
 
             const save_destination = this.getAttribute('data-save-url');
