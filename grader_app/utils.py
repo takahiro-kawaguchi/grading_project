@@ -202,3 +202,19 @@ def save_report_settings_to_file(data, app=None):
         app.config[key] = value
 
         
+
+def summarize_problems(report_type, report_name, student_names):
+    summary = {"total": {}, "correct": {}}
+
+    for student_name in student_names:
+        grades = load_grades_from_json(report_type, report_name, student_name)
+        for k, v in grades.items():
+            problem_id = k.replace("grade_", "")
+            if problem_id not in summary["total"]:
+                summary["total"][problem_id] = 0
+                summary["correct"][problem_id] = 0
+            if v in ["circle", "triangle", "cross"]:
+                summary["total"][problem_id] += 1
+                if v == "circle":
+                    summary["correct"][problem_id] += 1
+    return summary

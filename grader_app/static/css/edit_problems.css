@@ -26,3 +26,15 @@
         margin-left: 5px;
         white-space: nowrap;
     }
+
+    .summary-container {
+    min-width: 140px; /* パーセント表示まで含めて余裕を持った幅 */
+    text-align: center; /* 中央寄せにすると数値の変化が目立ちにくい */
+    font-size: 0.9em;   /* 少し小さくするとバランスが良い */
+    color: #666;        /* 補足情報なので少し色を薄めるのもアリ */
+}
+
+/* ついでに削除ボタンも幅を固定するとより綺麗です */
+.del-btn {
+    min-width: 60px;
+}

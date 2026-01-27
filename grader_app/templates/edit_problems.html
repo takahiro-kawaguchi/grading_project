@@ -31,6 +31,8 @@
                     <li class="list-item" data-id="{{ q_id }}">
                         <span class="handle">⠿</span>
                         <textarea class="editable problem-text" rows="3">{{ data.problems[q_id] }}</textarea>
+
+                        <div class="summary-container">正答: {{summary.correct[q_id]}}/{{summary.total[q_id]}}({{ "%.1f" | format(summary.correct[q_id] / summary.total[q_id] * 100) }}%)</div>
                         
                         <div class="point-container">
                             <input type="number" class="point-input" 

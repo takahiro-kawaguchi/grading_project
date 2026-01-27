@@ -4,7 +4,7 @@ from flask import jsonify
 import os
 import grader_app.pdf_grader.utils
 from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json, check_all_grades_entered, find_next_unfinished_student
-from grader_app.utils import load_report_settings, save_report_settings_to_file
+from grader_app.utils import load_report_settings, save_report_settings_to_file, summarize_problems
 import pandas as pd
 from flask import make_response
 import io
@@ -81,12 +81,17 @@ def generate(report_index, student_index, kind):
 @pdf_bp.route('<int:report_index>/edit_problems/')
 def edit_problems(report_index):
     back_url = request.args.get('back_url', url_for('pdf.index'))
+    student_names = get_students(report_index)
+    report_name = current_app.config['PDF_LIST'][report_index]
+    summary = summarize_problems('pdf', report_name, student_names)
+    print(f"Problem summary for report {report_name}: {summary}")
     return render_template(
         "edit_problems.html",
         report_index=report_index,
-        report_name=current_app.config['PDF_LIST'][report_index],
+        report_name=report_name,
         back_url=back_url,
-        data = load_problems_from_json('pdf', current_app.config['PDF_LIST'][report_index])
+        data = load_problems_from_json('pdf', report_name),
+        summary=summary
     )
 
 @pdf_bp.route('<int:report_index>/save_problems/', methods=['POST'])
