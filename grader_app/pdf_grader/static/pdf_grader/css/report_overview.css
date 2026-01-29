@@ -73,3 +73,9 @@
     color: white;
     padding: 1px 2px;
 }
+
+.bg-absence {
+    background-color: #f8d7da !important; /* 赤系の背景色 */
+    color: #721c24; /* 文字色も赤系に */
+    font-weight: bold;
+}

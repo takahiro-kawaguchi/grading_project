@@ -218,3 +218,62 @@ def summarize_problems(report_type, report_name, student_names):
                 if v == "circle":
                     summary["correct"][problem_id] += 1
     return summary
+
+
+def get_attendance(report_type):
+    dirname = current_app.config[f'{report_type.upper()}_BASE_DIR']
+    print(f"Looking for enrolled student files in directory: {dirname}")
+    
+    # .xls と .xlsx 両方に対応できるようにしておくとより安全です
+    target_files = glob.glob(os.path.join(dirname, "*出席*.xls*"))
+    
+    print(f"Enrolled student files found: {target_files}")
+    if not target_files:
+        print("エラー: '出席' を含むファイルが見つかりませんでした。")
+        print(os.listdir(dirname))
+        return None
+    if len(target_files) > 1:
+        print("エラー: '出席' を含むファイルが複数見つかりました。")
+        return None
+        
+    target_file = target_files[0]
+    print(f"Loading enrolled students from file: {target_file}")
+    
+    import pandas as pd
+    df = pd.read_excel(target_file, sheet_name=None)
+    all_emails = set()
+    sheet_email_sets = {}
+    for sheet_name, df_ in df.items():
+        if 'メールアドレス' in df_.columns:
+            emails = df_['メールアドレス'].dropna().astype(str).str.upper().str.strip().tolist()
+            all_emails.update(emails)
+            sheet_email_sets[sheet_name] = set(emails)
+
+    attendance_list = []
+    for email in all_emails:
+        row = {'学籍番号': email.split('@')[0]}  # 学籍番号部分のみ
+        for sheet_name, email_set in sheet_email_sets.items():
+            row[sheet_name] = "◎" if email in email_set else "×"
+        attendance_list.append(row)
+    
+    df_attendance = pd.DataFrame(attendance_list)
+
+    df_students = get_enrolled_students(report_type)
+    unlisted = df_attendance[~df_attendance['学籍番号'].isin(df_students['学籍番号'])]
+
+    if df_students is not None:
+        df_attendance = df_students.merge(df_attendance, on='学籍番号', how='left')
+        # 元の順番でソート
+        df_attendance = df_attendance.sort_values(by='original_order').reset_index(drop=True)
+    df_attendance = df_attendance.fillna("×")
+    is_within_limit = (df_attendance == '×').sum(axis=1) <= 5
+    df_attendance['判定'] = is_within_limit.map({True: '◎', False: '×'})
+    df_attendance.to_excel(os.path.join(current_app.config[report_type.upper() + '_SAVE_DIR'], 'attendance_summary.xlsx'), index=False)
+    return {
+        "enrolled": df_attendance.to_dict(orient='records'),
+        "unlisted": unlisted.to_dict(orient='records') if unlisted is not None else [],
+        "columns": df_attendance.columns.tolist(),
+        "report_list": list(sheet_email_sets.keys()),
+        "mode": "status",
+        "stats": None
+    }

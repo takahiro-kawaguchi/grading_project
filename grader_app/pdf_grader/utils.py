@@ -8,6 +8,7 @@ from PIL import Image
 import pandas as pd
 import json
 from datetime import datetime
+from grader_app.utils import get_attendance
 
 
 def extract_keys(filename):
@@ -321,6 +322,12 @@ def get_report_data_context(mode='status'):
         df_unlisted['平均点'] = df_unlisted[report_list].mean(axis=1).round(1)
         df_unlisted['評価'] = df_unlisted['平均点'].apply(calculate_grade)
 
+
+    data = get_attendance("pdf")
+    attendance = pd.DataFrame(data['enrolled']).drop(columns=['判定'])
+    absences = (attendance == '×').sum(axis=1)
+    df_students["欠席回数"] = absences
+
     # original_orderでソート
     df_students = df_students.sort_values('original_order')
 
@@ -333,17 +340,6 @@ def get_report_data_context(mode='status'):
         "stats": stats
     }
 
-
-
-    df_students = df_students.sort_values('original_order')
-
-    return {
-        "enrolled": df_students.to_dict(orient='records'),
-        "unlisted": df_unlisted.to_dict(orient='records') if df_unlisted is not None else [],
-        "columns": df_students.columns.tolist(),
-        "report_list": report_list,
-        "mode": mode
-    }
 
 
 def parse_japanese_date(date_str):

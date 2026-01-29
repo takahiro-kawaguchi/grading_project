@@ -36,6 +36,12 @@
     {% elif col_name == '評価' %}
         {# 評価列：初期状態のクラスを grade-cell に #}
         <td class="grade-cell" style="text-align: center; font-weight: bold;">{{ val }}</td>
+    {% elif col_name == '欠席回数' %}
+        {% if val|int >= 6 %}
+            <td class="bg-absence">{{ val }}</td>
+        {% else %}
+            <td>{{ val }}</td>
+        {% endif %}
     {% else %}
         <td>{{ val }}</td>
     {% endif %}

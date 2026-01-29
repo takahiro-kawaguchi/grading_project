@@ -4,7 +4,7 @@ from flask import jsonify
 import os
 import grader_app.pdf_grader.utils
 from grader_app.utils import load_problems_from_json, save_problems_to_json, load_grades_from_json, save_grades_to_json, check_all_grades_entered, find_next_unfinished_student
-from grader_app.utils import load_report_settings, save_report_settings_to_file, summarize_problems
+from grader_app.utils import load_report_settings, save_report_settings_to_file, summarize_problems, get_attendance
 import pandas as pd
 from flask import make_response
 import io
@@ -50,7 +50,7 @@ def viewer(report_index, student_index):
         student_index=student_index,
         student_name=student_names[student_index],
         total_students=len(student_names),
-        back_url=url_for('pdf.viewer', report_index=report_index, student_index=student_index, rotate=rotate),
+        back_url=url_for('pdf.viewer', report_index=report_index, student_index=student_index),
         problems=problems,
         gardes=grades,
         rotate=rotate,
@@ -231,3 +231,8 @@ def save_thresholds():
         return jsonify({"status": "success", "message": "設定を保存しました"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+@pdf_bp.route('attendance/')
+def attendance():
+    data = get_attendance("pdf")
+    return render_template("pdf_grader/report_overview.html", **data), 200
