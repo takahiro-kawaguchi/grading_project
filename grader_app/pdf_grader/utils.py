@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image
 import pandas as pd
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from grader_app.utils import get_attendance
 
 
@@ -172,7 +172,8 @@ def issubmitted(report_name, student_name, kind_name):
         return False
     submissions = os.listdir(os.path.join(base_dir, filtered_raw_dir[0]))
     filtered_submissions = [s for s in submissions if student_name in s]
-    return len(filtered_submissions) == 1
+    pdffile = os.listdir(os.path.join(base_dir, filtered_raw_dir[0], filtered_submissions[0])) if len(filtered_submissions) == 1 else []
+    return len(filtered_submissions) == 1, os.path.join(base_dir, filtered_raw_dir[0], filtered_submissions[0], pdffile[0]) if len(pdffile) > 0 else None
 
 
 def get_scores(report_index):
@@ -189,7 +190,7 @@ def get_scores(report_index):
     return scores
 
 
-def get_report_data_context(mode='status'):
+def get_report_data_context(mode='scores'):
     """
     提出状況またはスコアのデータを生成する共通ヘルパー関数
     mode: 'status' (◎, 詳, 答, ×) または 'scores' (数値)
@@ -197,16 +198,27 @@ def get_report_data_context(mode='status'):
     from grader_app.utils import get_enrolled_students
     ratio_detail_only = current_app.config.get('RATIO_DETAIL_ONLY', 0.5)
     ratio_answer_only = current_app.config.get('RATIO_ANSWER_ONLY', 0.5)
+    ratio_duplicate = current_app.config.get('RATIO_DUPLICATE', 0.6)
     ratio_late = current_app.config.get('RATIO_LATE', 0.8)
+    ratio_very_late = current_app.config.get('RATIO_VERY_LATE', 0.6)
+    large_delay_threshold = current_app.config.get('DELAY_THRESHOLD_DAYS', 15)
     
     df_students = get_enrolled_students('pdf')
     if df_students is None:
         return None
 
     report_list = current_app.config['PDF_LIST']
-    all_unlisted_data = []
 
     submission_files = [f for f in os.listdir(current_app.config['PDF_BASE_DIR']) if f.endswith(".json")]
+    df_students_score = None  # スコア用のDataFrameを初期化
+    df_students_status = None  # 提出状況用のDataFrameを初期化
+    df_students_late = None  # 遅延状況用のDataFrameを初期化
+    df_students_id = None
+
+    df_unlisted_score = None
+    df_unlisted_status = None
+    df_unlisted_late = None
+    df_unlisted_id = None
 
     for i, report_name in enumerate(report_list):
         scores_data = get_scores(i)
@@ -215,6 +227,9 @@ def get_report_data_context(mode='status'):
         
         students_names = get_students(i)
         current_report_rows = []
+        current_report_late_rows = []
+        current_report_status_rows = []
+        id_rows = []
         
         submission_file_detail = [f for f in submission_files if report_name.split("-")[1] in f and '詳細' in f]
         submission_file_answer = [f for f in submission_files if report_name.split("-")[1] in f and '解答のみ' in f]
@@ -232,70 +247,136 @@ def get_report_data_context(mode='status'):
         deadline_detail = submission_date_detail.get("deadline", "")
         deadline_answer = submission_date_answer.get("deadline", "")
 
-        for student_name in students_names:
+        for i_st, student_name in enumerate(students_names):
             parts = student_name.split()
             number = parts[0].upper().strip()
             name = " ".join(parts[1:]).strip() if len(parts) > 1 else ""
             
-            sub_detail = issubmitted(report_name, student_name, '詳細')
-            sub_answer = issubmitted(report_name, student_name, '解答のみ')
+            sub_detail, detail_file = issubmitted(report_name, student_name, '詳細')
+            sub_answer, answer_file = issubmitted(report_name, student_name, '解答のみ')
             
             is_late = False
+            is_very_late = False
+            delay = None
             if sub_detail:
                 date_detail = submission_date_detail["submissions"][number]
-                is_late = check_delay(deadline_detail, date_detail)
+                is_late, delay = check_delay(deadline_detail, date_detail)
+                    
             if sub_answer:
                 date_answer = submission_date_answer["submissions"][number]
-                is_late = is_late or check_delay(deadline_answer, date_answer)
+                is_late_, delay_ = check_delay(deadline_answer, date_answer)
+                if not delay or (delay_ and delay_ > delay):
+                    delay = delay_
+            is_late = is_late or is_late_
+            is_very_late = delay is not None and delay > timedelta(days=large_delay_threshold)  # 例: 7日以上の遅延を「非常に遅い」とみなす
+
+            base_score = scores.get(student_name, 0)
 
 
+            if sub_detail and sub_answer:
+                import filecmp
+                is_same = filecmp.cmp(detail_file, answer_file, shallow=False)
+                if is_same:
+                    status= "同"
+                    val = base_score * ratio_duplicate
+                else:
+                    status = "◎"
+                    val = base_score
+            elif sub_detail:
+                status = "詳"
+                val = base_score * ratio_detail_only
+            elif sub_answer: 
+                status = "答"
+                val = base_score * ratio_answer_only
+            else: 
+                status = "×"
+                val = 0
 
-            if mode == 'status':
-                suffix = "（遅）" if is_late else ""
-                if sub_detail and sub_answer: val = "◎"+suffix
-                elif sub_detail: val = "詳"+suffix
-                elif sub_answer: val = "答"+suffix
-                else: val = "×"
-            else: # scores mode
-                base_score = scores.get(student_name, 0)
-                if sub_detail and sub_answer: val = base_score
-                elif sub_detail: val = base_score * ratio_detail_only
-                elif sub_answer: val = base_score * ratio_answer_only
-                else: val = 0
+            if is_very_late:
+                val = val * ratio_very_late
+            elif is_late:
+                val = val * ratio_late
 
-                if is_late:
-                    val = val * ratio_late
-                val = round(val, 1)
+            
+            val = round(val, 1)
             
             current_report_rows.append({'学籍番号': number, '氏名': name, report_name: val})
+            current_report_status_rows.append({'学籍番号': number, '氏名': name, report_name: status})
+            current_report_late_rows.append({'学籍番号': number, '氏名': name, report_name: "大遅" if is_very_late else ("遅" if is_late else "")})
+            id_rows.append({'学籍番号': number, '氏名': name, report_name: i_st})
 
-        status_df = pd.DataFrame(current_report_rows)
-        
+        score_df = pd.DataFrame(current_report_rows)
+        status_df = pd.DataFrame(current_report_status_rows)
+        late_df = pd.DataFrame(current_report_late_rows)
+        id_df = pd.DataFrame(id_rows)
+
         # 名簿内へのマージ
-        df_students = pd.merge(df_students, status_df.drop(columns=['氏名']), on='学籍番号', how='left')
-        fill_val = "×" if mode == 'status' else 0
-        df_students[report_name] = df_students[report_name].fillna(fill_val)
+        if df_students_score is None:
+            df_students_score = pd.merge(df_students, score_df.drop(columns=['氏名']), on=['学籍番号'], how='left')
+        else:
+            df_students_score = pd.merge(df_students_score, score_df.drop(columns=['氏名']), on='学籍番号', how='left')
+        if df_students_status is None:
+            df_students_status = pd.merge(df_students, status_df.drop(columns=['氏名']), on=['学籍番号'], how='left')
+        else:
+            df_students_status = pd.merge(df_students_status, status_df.drop(columns=['氏名']), on='学籍番号', how='left')
+        if df_students_late is None:
+            df_students_late = pd.merge(df_students, late_df.drop(columns=['氏名']), on=['学籍番号'], how='left')
+        else:
+            df_students_late = pd.merge(df_students_late, late_df.drop(columns=['氏名']), on='学籍番号', how='left')
+        if df_students_id is None:
+            df_students_id = pd.merge(df_students, id_df.drop(columns=['氏名']), on='学籍番号', how='left')
+        else:
+            df_students_id = pd.merge(df_students_id, id_df.drop(columns=['氏名']), on='学籍番号', how='left')
+        # df_students = pd.merge(df_students, status_df.drop(columns=['氏名']), on='学籍番号', how='left')
 
-        # 名簿外の抽出
-        unlisted = status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])]
-        all_unlisted_data.append(unlisted)
+        df_students_score[report_name] = df_students_score[report_name].fillna(0)
+        df_students_status[report_name] = df_students_status[report_name].fillna("×")
+        df_students_late[report_name] = df_students_late[report_name].fillna("")
+        df_students_id[report_name] = df_students_id[report_name].fillna(-1)
 
-    # 名簿外学生の集約
-    df_unlisted = None
-    if all_unlisted_data:
-        for temp_df in all_unlisted_data:
-            if df_unlisted is None:
-                df_unlisted = temp_df
-            else:
-                df_unlisted = pd.merge(df_unlisted, temp_df, on=['学籍番号', '氏名'], how='outer')
-        if df_unlisted is not None:
-            df_unlisted = df_unlisted.fillna("×" if mode == 'status' else 0)
+        if df_unlisted_score is None:
+            df_unlisted_score = score_df[~score_df['学籍番号'].isin(df_students['学籍番号'])]
+        else:
+            df_unlisted_score = pd.merge(df_unlisted_score, score_df[~score_df['学籍番号'].isin(df_students['学籍番号'])], on=['学籍番号', '氏名'], how='outer')
+        if df_unlisted_status is None:
+            df_unlisted_status = status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])]
+        else:
+            df_unlisted_status = pd.merge(df_unlisted_status, status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])], on=['学籍番号', '氏名'], how='outer')
+        if df_unlisted_late is None:
+            df_unlisted_late = late_df[~late_df['学籍番号'].isin(df_students['学籍番号'])]
+        else:
+            df_unlisted_late = pd.merge(df_unlisted_late, late_df[~late_df['学籍番号'].isin(df_students['学籍番号'])], on=['学籍番号', '氏名'], how='outer')
+        if df_unlisted_id is None:
+            df_unlisted_id = id_df[~id_df['学籍番号'].isin(df_students['学籍番号'])]
+        else:
+            df_unlisted_id = pd.merge(df_unlisted_id, id_df[~id_df['学籍番号'].isin(df_students['学籍番号'])], on=['学籍番号', '氏名'], how='outer')
+
+        # fill_val = "×" if mode == 'status' else 0
+        # df_students[report_name] = df_students[report_name].fillna(fill_val)
+
+        # unlisted_status = status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])]
+        # unlisted_score = score_df[~score_df['学籍番号'].isin(df_students['学籍番号'])]
+        # unlisted_late = late_df[~late_df['学籍番号'].isin(df_students['学籍番号'])]
+        # unlisted_id = id_df[~id_df['学籍番号'].isin(df_students['学籍番号'])] 
+        # unlisted_students = set(unlisted_status["学籍番号"]) - set(df_students["学籍番号"])
+        # unlisted = []
+        # for student in unlisted_students:
+        #     unlisted_row = {}
+        #     unlisted_data = f"{unlisted_id[unlisted_id['学籍番号'] == student][report_name].values[0]}:{unlisted_score[unlisted_score['学籍番号'] == student][report_name].values[0]} ({unlisted_status[unlisted_status['学籍番号'] == student][report_name].values[0]}{unlisted_late[unlisted_late['学籍番号'] == student][report_name].values[0]})"
+        #     unlisted_row["学籍番号"] = student
+        #     unlisted_row["氏名"] = unlisted_status[unlisted_status['学籍番号'] == student]['氏名'].values[0]
+        #     unlisted_row[report_name] = unlisted_data
+        #     unlisted.append(unlisted_row)
+        # if df_unlisted is None:
+        #     df_unlisted = pd.DataFrame(unlisted) if unlisted else None
+        # else:
+        #     df_unlisted = pd.merge(df_unlisted, pd.DataFrame(unlisted), on=['学籍番号', '氏名'], how='outer')
 
     stats = {}
 
-    if mode == 'scores' and not df_students.empty:
+    if not df_students_score.empty:
         # report_list に含まれる列（各課題の点数）だけで平均を計算
-        df_students['平均点'] = df_students[report_list].mean(axis=1).round(1)
+        df_students_score['平均点'] = df_students_score[report_list].mean(axis=1).round(1)
         
         # 評価ロジック
         def calculate_grade(score):
@@ -305,10 +386,10 @@ def get_report_data_context(mode='status'):
             if score >= current_app.config.get('THRESHOLD_C', 60): return 'C'
             return 'D'
         
-        df_students['評価'] = df_students['平均点'].apply(calculate_grade)
+        df_students_score['評価'] = df_students_score['平均点'].apply(calculate_grade)
         
-        counts = df_students['評価'].value_counts()
-        total = len(df_students)
+        counts = df_students_score['評価'].value_counts()
+        total = len(df_students_score)
         
         # S, A, B, C, D の順番で辞書を作成
         for grade in ['S', 'A', 'B', 'C', 'D']:
@@ -316,34 +397,61 @@ def get_report_data_context(mode='status'):
             ratio = round((count / total) * 100, 1) if total > 0 else 0
             stats[grade] = {'count': count, 'ratio': ratio}
 
-    # 名簿外学生の集約
-    # ... (既存の集約処理) ...
-    if mode == 'scores' and df_unlisted is not None and not df_unlisted.empty:
-        df_unlisted['平均点'] = df_unlisted[report_list].mean(axis=1).round(1)
-        df_unlisted['評価'] = df_unlisted['平均点'].apply(calculate_grade)
+    if not df_unlisted_score.empty:
+        df_unlisted_score['平均点'] = df_unlisted_score[report_list].mean(axis=1).round(1)
 
+        # 評価ロジック
+        def calculate_grade(score):
+            if score >= current_app.config.get('THRESHOLD_S', 90): return 'S' # 90以上をS、それ以外をA~Dに振り分け
+            if score >= current_app.config.get('THRESHOLD_A', 80): return 'A'
+            if score >= current_app.config.get('THRESHOLD_B', 70): return 'B'
+            if score >= current_app.config.get('THRESHOLD_C', 60): return 'C'
+            return 'D'
+        
+        df_unlisted_score['評価'] = df_unlisted_score['平均点'].apply(calculate_grade)
 
     data = get_attendance("pdf")
     attendance = pd.DataFrame(data['enrolled']).drop(columns=['判定'])
     absences = (attendance == '×').sum(axis=1)
-    df_students["欠席回数"] = absences
+    df_students_score["欠席回数"] = absences
+
+    attendance = pd.DataFrame(data['unlisted'])
+    absences = (attendance == '×').sum(axis=1)
+    if df_unlisted_score is not None:
+        df_unlisted_score["欠席回数"] = absences
 
     # original_orderでソート
-    df_students = df_students.sort_values('original_order')
+    df_students_score = df_students_score.sort_values('original_order')
+    df_students_status = df_students_status.sort_values('original_order')
+    df_students_late = df_students_late.sort_values('original_order')
+    df_students_id = df_students_id.sort_values('original_order')
+
+
+    print(df_unlisted_score)
+    print(df_unlisted_status)
+    print(df_unlisted_late)
+    print(df_unlisted_id)
 
     return {
-        "enrolled": df_students.to_dict(orient='records'),
-        "unlisted": df_unlisted.to_dict(orient='records') if df_unlisted is not None else [],
-        "columns": df_students.columns.tolist(),
+        "enrolled": df_students_score.to_dict(orient='records'),
+        "enrolled_status": df_students_status.to_dict(orient='records'),
+        "enrolled_late": df_students_late.to_dict(orient='records'),
+        "enrolled_id": df_students_id.to_dict(orient='records'),
+        "unlisted": df_unlisted_score.to_dict(orient='records') if df_unlisted_score is not None else [],
+        "unlisted_status": df_unlisted_status.to_dict(orient='records') if df_unlisted_status is not None else [],
+        "unlisted_late": df_unlisted_late.to_dict(orient='records') if df_unlisted_late is not None else [],
+        "unlisted_id": df_unlisted_id.to_dict(orient='records') if df_unlisted_id is not None else [],
+        "columns": df_students_score.columns.tolist(),
         "report_list": report_list,
-        "mode": mode,
-        "stats": stats
+        "stats": stats,
+        "mode": mode
     }
 
 
 
 def parse_japanese_date(date_str):
     """
+
     「2025年 10月 9日(木曜日) 17:23」のような形式をdatetimeに変換する
     """
     # 正規表現で数字部分だけを抽出する (年, 月, 日, 時, 分)
@@ -365,8 +473,9 @@ def check_delay(deadline_str, submission_str):
         return "日付形式が正しくありません"
 
     if submission > deadline:
+        delay = submission - deadline
         # delay = submission - deadline
         # 1時間以上の遅延、1分以上の遅延など詳細を出すことも可能
-        return True
+        return True, delay
     else:
-        return False
+        return False, None

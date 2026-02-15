@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block additional_css %}
-<link rel="stylesheet" href="{{ url_for('pdf.static', filename='pdf_grader/css/report_overview.css') }}">
+<link rel="stylesheet" href="{{ url_for('pdf.static', filename='pdf_grader/css/attendance_overview.css') }}">
 {% endblock %}
 
 {% block navigation %}
@@ -17,57 +17,33 @@
 {% endblock %}
 
 
-{% macro render_cell(score, status, late, report_id, student_id, col_name, report_list) %}
+{% macro render_cell(val, col_name, report_list, mode) %}
     {% if col_name in report_list %}
-
-    <td class="report-cell score-cell 
-            {% if status == '◎' %}bg-perfect
-            {% elif status == '詳' %}bg-detail
-            {% elif status == '答' %}bg-answer
-            {% elif status == '同' %}bg-same
-            {% elif status == '×' %}bg-none
-            {% endif %} 
-            style="text-align: left; vertical-align: middle;">
-            {# 中央にスコアを表示 #}
-            {% if student_id >= 0 %}
-                <span class="main-score"><a href="{{ url_for('pdf.viewer', student_index=student_id, report_index=report_id) }}">{{ score }}</a></span>
-            {% else %}
-                <span class="main-score">{{ score }}</span>
-            {% endif %}
-            {% if late == '遅' %}
-                <span class="late-indicator">遅</span>
-            {% elif late == '大遅' %}
-                <span class="very-late-indicator">大遅</span>
-            {% endif %}
-            {% if status == "◎" %}
-                <span class="perfect-indicator">◎</span>
-                {% elif status == "詳" %}
-                <span class="detail-indicator">詳</span>
-                {% elif status == "答" %}
-                <span class="answer-indicator">答</span>
-                {% elif status == "同" %}
-                <span class="same-indicator">同</span>
-                {% elif status == "×" %}
-                 <span class="none-indicator">×</span>
-            {% endif %}
-            <span>  </span>
-    </td>
+        {# 各課題の点数列 #}
+        {% if mode == 'status' %}
+            <td class="{% if '◎' in val %}bg-perfect{% elif '詳' in val %}bg-detail{% elif '答' in val %}bg-answer{% elif '×' in val %}bg-none{% endif %} {% if '遅' in val %}bg-late{% endif %}">
+                {{ val }}
+            </td>
+        {% else %}
+            {# スコアモード：JSで色を塗るために score-cell クラスを付与 #}
+            <td class="score-cell" style="text-align: right;">{{ val }}</td>
+        {% endif %}
 
     {% elif col_name == '平均点' %}
             {# 平均点列：JSで色を塗るために average-score-cell クラスを付与 #}
-            <td class="average-score-cell" style="text-align: right;">{{ score }}</td>
+            <td class="average-score-cell" style="text-align: right;">{{ val }}</td>
 
     {% elif col_name == '評価' %}
         {# 評価列：初期状態のクラスを grade-cell に #}
-        <td class="grade-cell" style="text-align: center; font-weight: bold;">{{ score }}</td>
+        <td class="grade-cell" style="text-align: center; font-weight: bold;">{{ val }}</td>
     {% elif col_name == '欠席回数' %}
-        {% if score|int >= 6 %}
-            <td class="bg-absence">{{ score }}</td>
+        {% if val|int >= 6 %}
+            <td class="bg-absence">{{ val }}</td>
         {% else %}
-            <td>{{ score }}</td>
+            <td>{{ val }}</td>
         {% endif %}
     {% else %}
-        <td>{{ score }}</td>
+        <td>{{ val }}</td>
     {% endif %}
 {% endmacro %}
 
@@ -86,26 +62,14 @@
     <tr class="bg-header">
         {% for col in columns %} <th>{{ col }}</th> {% endfor %}
     </tr>
-{% for i in range(enrolled|length) %}
-<tr>
-{% set ns_un = namespace(report_idx=0) %}
-    {% for col in columns %}
-        {# 各リストから同じ位置のデータを取り出す #}
-        {% set score_val = enrolled[i][col] %}
-        {% set status_val = enrolled_status[i][col] if col in report_list else '' %}
-        {% set late_val = enrolled_late[i][col] if col in report_list else '' %}
-        {% set id_val = enrolled_id[i][col] if col in report_list else '' %}
-        
-        {{ render_cell(score_val, status_val, late_val, ns_un.report_idx, id_val, col, report_list) }}
-        {% if col in report_list %}
-            {% set ns_un.report_idx = ns_un.report_idx + 1 %}
-        {% endif %}
+    {% for row in enrolled %}
+    <tr>
+        {% for col in columns %}
+            {{ render_cell(row[col], col, report_list, mode) }}
+        {% endfor %}
+    </tr>
     {% endfor %}
-</tr>
-{% endfor %}
 </table>
-
-
 
 {# 名簿外も同様にマクロを使用 #}
 {% if unlisted %}
@@ -114,22 +78,13 @@
     <tr class="bg-header">
         {% for col in columns %} <th>{{ col }}</th> {% endfor %}
     </tr>
-{% for i in range(unlisted|length) %}
-<tr>
-{% set ns_un = namespace(report_idx=0) %}
-    {% for col in columns %}
-        {# 各リストから同じ位置のデータを取り出す #}
-        {% set score_val = unlisted[i][col] %}
-        {% set status_val = unlisted_status[i][col] if col in report_list else '' %}
-        {% set late_val = unlisted_late[i][col] if col in report_list else '' %}
-        {% set id_val = unlisted_id[i][col] if col in report_list else '' %}
-        {{ render_cell(score_val, status_val, late_val, ns_un.report_idx, id_val, col, report_list) }}
-        {% if col in report_list %}
-            {% set ns_un.report_idx = ns_un.report_idx + 1 %}
-        {% endif %}
+    {% for row in unlisted %}
+    <tr>
+        {% for col in columns %}
+            {{ render_cell(row[col], col, report_list, mode) }}
+        {% endfor %}
+    </tr>
     {% endfor %}
-</tr>
-{% endfor %}
 </table>
 {% endif %}
 
@@ -160,7 +115,7 @@
 </div>
 {% endif %}
 
-{% if mode=='scores' and stats %}
+{% if mode == 'scores' and stats %}
 <div class="card p-3 mb-4 shadow-sm border-primary">
     <h5 class="card-title">成績分布サマリー</h5>
     <div class="row text-center">

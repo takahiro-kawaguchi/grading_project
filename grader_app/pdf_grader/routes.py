@@ -174,16 +174,6 @@ def check_all_finished(report_index):
         return jsonify({"status": "error", "message": str(e)}), 500
     
 
-@pdf_bp.route('report_status/')
-def report_status():
-    try:
-        context = get_report_data_context(mode='status')
-        if context is None:
-            return jsonify({"status": "error", "message": "No enrolled student files found."}), 404
-        return render_template("pdf_grader/report_overview.html", **context), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
 @pdf_bp.route('report_scores/')
 def report_scores():
     try:
@@ -235,4 +225,4 @@ def save_thresholds():
 @pdf_bp.route('attendance/')
 def attendance():
     data = get_attendance("pdf")
-    return render_template("pdf_grader/report_overview.html", **data), 200
+    return render_template("pdf_grader/attendance_overview.html", **data), 200

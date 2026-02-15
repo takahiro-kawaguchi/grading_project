@@ -1,6 +1,14 @@
 .status-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
 .status-table th, .status-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
 
+/* ステータス別の背景色 */
+.bg-perfect { background-color: #c3e6cb; } /* ◎ 緑 */
+.bg-detail  { background-color: #bee5eb; } /* 詳 青 */
+.bg-answer  { background-color: #ffeeba; } /* 答 黄 */
+.bg-none    { background-color: #f8d7da; } /* × 赤 */
+.bg-header  { background-color: #f2f2f2; font-weight: bold; }
+
+
 /* スコアモード用の色設定 */
 .score-high { background-color: #d4edda; color: #155724; text-align: right; } /* 薄い緑 */
 .score-mid  { background-color: #fff3cd; color: #856404; text-align: right; } /* 薄い黄色 */
@@ -51,25 +59,17 @@
 
 /* report_overview.css */
 .bg-late {
+    border: 2px solid #fd7e14 !important; /* オレンジ色の枠線 */
     color: #d9534f; /* 文字を少し赤く */
     position: relative;
 }
-.late-indicator {
+.bg-late::after {
+    content: "遅";
     font-size: 0.6em;
     position: absolute;
-    bottom: 0;
+    top: 0;
     right: 0;
     background: #fd7e14;
-    color: white;
-    padding: 1px 2px;
-}
-
-.very-late-indicator {
-    font-size: 0.6em;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background: #dc3545;
     color: white;
     padding: 1px 2px;
 }
@@ -79,56 +79,3 @@
     color: #721c24; /* 文字色も赤系に */
     font-weight: bold;
 }
-.report-cell{
-    position: relative; /* バッジの位置調整のために相対位置に */
-}
-
-.perfect-indicator {
-    font-size: 0.6em;
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: #28a745; /* 緑色 */
-    color: white;
-    padding: 1px 2px;
-}
-
-.same-indicator {
-    font-size: 0.6em;
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: #17a2b8; /* 青色 */
-    color: white;
-    padding: 1px 2px;
-}
-
-.answer-indicator {
-    font-size: 0.6em;
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: #ffc107; /* 黄色 */
-    color: black;
-    padding: 1px 2px;
-}
-
-.detail-indicator {
-    font-size: 0.6em;
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: #17a2b8; /* 青色 */
-    color: white;
-    padding: 1px 2px;
-}
-
-.none-indicator {
-    font-size: 0.6em;
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: #dc3545; /* 赤色 */
-    color: white;
-    padding: 1px 2px;
-} 
