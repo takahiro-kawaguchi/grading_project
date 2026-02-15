@@ -413,24 +413,21 @@ def get_report_data_context(mode='scores'):
     data = get_attendance("pdf")
     attendance = pd.DataFrame(data['enrolled']).drop(columns=['判定'])
     absences = (attendance == '×').sum(axis=1)
-    df_students_score["欠席回数"] = absences
+    attendance["欠席回数"] = absences
+    df_students_score = pd.merge(df_students_score, attendance[["学籍番号", "欠席回数"]], on='学籍番号', how='left')
 
     attendance = pd.DataFrame(data['unlisted'])
     absences = (attendance == '×').sum(axis=1)
-    if df_unlisted_score is not None:
-        df_unlisted_score["欠席回数"] = absences
+    attendance["欠席回数"] = absences
+    df_unlisted_score = pd.merge(df_unlisted_score, attendance[["学籍番号", "欠席回数"]], on='学籍番号', how='left') if df_unlisted_score is not None else None
+    # if df_unlisted_score is not None:
+    #     df_unlisted_score["欠席回数"] = absences
 
     # original_orderでソート
     df_students_score = df_students_score.sort_values('original_order')
     df_students_status = df_students_status.sort_values('original_order')
     df_students_late = df_students_late.sort_values('original_order')
     df_students_id = df_students_id.sort_values('original_order')
-
-
-    print(df_unlisted_score)
-    print(df_unlisted_status)
-    print(df_unlisted_late)
-    print(df_unlisted_id)
 
     return {
         "enrolled": df_students_score.to_dict(orient='records'),

@@ -123,6 +123,7 @@
         {% set status_val = unlisted_status[i][col] if col in report_list else '' %}
         {% set late_val = unlisted_late[i][col] if col in report_list else '' %}
         {% set id_val = unlisted_id[i][col] if col in report_list else '' %}
+        
         {{ render_cell(score_val, status_val, late_val, ns_un.report_idx, id_val, col, report_list) }}
         {% if col in report_list %}
             {% set ns_un.report_idx = ns_un.report_idx + 1 %}
