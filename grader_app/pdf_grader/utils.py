@@ -351,27 +351,6 @@ def get_report_data_context(mode='scores'):
         else:
             df_unlisted_id = pd.merge(df_unlisted_id, id_df[~id_df['学籍番号'].isin(df_students['学籍番号'])], on=['学籍番号', '氏名'], how='outer')
 
-        # fill_val = "×" if mode == 'status' else 0
-        # df_students[report_name] = df_students[report_name].fillna(fill_val)
-
-        # unlisted_status = status_df[~status_df['学籍番号'].isin(df_students['学籍番号'])]
-        # unlisted_score = score_df[~score_df['学籍番号'].isin(df_students['学籍番号'])]
-        # unlisted_late = late_df[~late_df['学籍番号'].isin(df_students['学籍番号'])]
-        # unlisted_id = id_df[~id_df['学籍番号'].isin(df_students['学籍番号'])] 
-        # unlisted_students = set(unlisted_status["学籍番号"]) - set(df_students["学籍番号"])
-        # unlisted = []
-        # for student in unlisted_students:
-        #     unlisted_row = {}
-        #     unlisted_data = f"{unlisted_id[unlisted_id['学籍番号'] == student][report_name].values[0]}:{unlisted_score[unlisted_score['学籍番号'] == student][report_name].values[0]} ({unlisted_status[unlisted_status['学籍番号'] == student][report_name].values[0]}{unlisted_late[unlisted_late['学籍番号'] == student][report_name].values[0]})"
-        #     unlisted_row["学籍番号"] = student
-        #     unlisted_row["氏名"] = unlisted_status[unlisted_status['学籍番号'] == student]['氏名'].values[0]
-        #     unlisted_row[report_name] = unlisted_data
-        #     unlisted.append(unlisted_row)
-        # if df_unlisted is None:
-        #     df_unlisted = pd.DataFrame(unlisted) if unlisted else None
-        # else:
-        #     df_unlisted = pd.merge(df_unlisted, pd.DataFrame(unlisted), on=['学籍番号', '氏名'], how='outer')
-
     stats = {}
 
     if not df_students_score.empty:

@@ -217,6 +217,7 @@ def download_report_xlsx():
 def save_thresholds():
     try:
         data = request.json
+        print(f"Received threshold data: {data}")
         save_report_settings_to_file(data)
         return jsonify({"status": "success", "message": "設定を保存しました"})
     except Exception as e:

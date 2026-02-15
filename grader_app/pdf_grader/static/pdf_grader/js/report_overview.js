@@ -79,7 +79,13 @@ async function saveThresholds() {
     s: document.getElementById('threshold-s').value,
     a: document.getElementById('threshold-a').value,
     b: document.getElementById('threshold-b').value,
-    c: document.getElementById('threshold-c').value
+    c: document.getElementById('threshold-c').value,
+    delay_threshold_days: document.getElementById('delay-threshold-days').value,
+    ratio_detail_only: document.getElementById('ratio-detail-only').value,
+    ratio_answer_only: document.getElementById('ratio-answer-only').value,
+    ratio_duplicate: document.getElementById('ratio-duplicate').value,
+    ratio_late: document.getElementById('ratio-late').value,
+    ratio_very_late: document.getElementById('ratio-very-late').value
   };
 
   try {
@@ -90,7 +96,8 @@ async function saveThresholds() {
     });
 
     if (response.ok) {
-      alert('設定を保存しました。次回起動時もこの値が適用されます。');
+      alert('設定を保存しました。再計算して表示します。');
+      location.reload(); 
     } else {
       alert('保存に失敗しました。');
     }

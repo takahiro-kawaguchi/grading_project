@@ -162,7 +162,10 @@ def load_report_settings(app=None):
         'THRESHOLD_C': 60,
         'RATIO_DETAIL_ONLY': 0.5,
         'RATIO_ANSWER_ONLY': 0.5,
-        'RATIO_LATE': 0.8
+        'RATIO_LATE': 0.8,
+        'RATIO_DUPLICATE': 0.6,
+        'RATIO_VERY_LATE': 0.6,
+        'DELAY_THRESHOLD_DAYS': 15
     }
     
     if os.path.exists(os.path.join(app.config['SAVE_DIR'], app.config['REPORT_SETTINGS_FILE'])):
@@ -184,13 +187,16 @@ def save_report_settings_to_file(data, app=None):
         app = current_app
     """データをJSONファイルに保存し、app.configも更新する"""
     settings = {
-        'THRESHOLD_S': int(data.get('s', 90)),
-        'THRESHOLD_A': int(data.get('a', 80)),
-        'THRESHOLD_B': int(data.get('b', 70)),
-        'THRESHOLD_C': int(data.get('c', 60)),
-        'RATIO_DETAIL_ONLY': float(data.get('ratio_detail_only', 0.5)),
-        'RATIO_ANSWER_ONLY': float(data.get('ratio_answer_only', 0.5)),
-        'RATIO_LATE': float(data.get('ratio_late', 0.8))
+        'THRESHOLD_S': int(data.get('s', app.config.get('THRESHOLD_S', 90))),
+        'THRESHOLD_A': int(data.get('a', app.config.get('THRESHOLD_A', 80))),
+        'THRESHOLD_B': int(data.get('b', app.config.get('THRESHOLD_B', 70))),
+        'THRESHOLD_C': int(data.get('c', app.config.get('THRESHOLD_C', 60))),
+        'RATIO_DETAIL_ONLY': float(data.get('ratio_detail_only', app.config.get('RATIO_DETAIL_ONLY', 0.5))),
+        'RATIO_ANSWER_ONLY': float(data.get('ratio_answer_only', app.config.get('RATIO_ANSWER_ONLY', 0.5))),
+        'RATIO_LATE': float(data.get('ratio_late', app.config.get('RATIO_LATE', 0.8))),
+        'RATIO_DUPLICATE': float(data.get('ratio_duplicate', app.config.get('RATIO_DUPLICATE', 0.6))),
+        'RATIO_VERY_LATE': float(data.get('ratio_very_late', app.config.get('RATIO_VERY_LATE', 0.6))),
+        'DELAY_THRESHOLD_DAYS': int(data.get('delay_threshold_days', app.config.get('DELAY_THRESHOLD_DAYS', 15)))
     }
     
     # 1. ファイルに保存

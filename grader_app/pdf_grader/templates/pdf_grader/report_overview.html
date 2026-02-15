@@ -136,30 +136,64 @@
 
 {% if mode == 'scores' %}
 <div class="card p-3 mb-4 shadow-sm">
-    <h5 class="card-title">スコア色分け・評価設定</h5>
-    <div class="row g-3">
+    <h5 class="card-title mb-3">スコア色分け・計算設定</h5>
+    
+    <div class="row g-3 mb-4">
         <div class="col-md-2">
-            <label class="form-label">S (以上)</label>
+            <label class="form-label text-primary">S (以上)</label>
             <input type="number" id="threshold-s" class="form-control score-input" value="{{ config['THRESHOLD_S'] }}">
         </div>
         <div class="col-md-2">
-            <label class="form-label">A (以上)</label>
+            <label class="form-label text-primary">A (以上)</label>
             <input type="number" id="threshold-a" class="form-control score-input" value="{{ config['THRESHOLD_A'] }}">
         </div>
         <div class="col-md-2">
-            <label class="form-label">B (以上)</label>
+            <label class="form-label text-primary">B (以上)</label>
             <input type="number" id="threshold-b" class="form-control score-input" value="{{ config['THRESHOLD_B'] }}">
         </div>
         <div class="col-md-2">
-            <label class="form-label">C (以上)</label>
+            <label class="form-label text-primary">C (以上)</label>
             <input type="number" id="threshold-c" class="form-control score-input" value="{{ config['THRESHOLD_C'] }}">
         </div>
-        <div class="col-md-4 d-flex align-items-end">
+        <div class="col-md-4">
+            <label class="form-label text-danger">大遅延の境界 (日)</label>
+            <input type="number" id="delay-threshold-days" class="form-control score-input" value="{{ config['DELAY_THRESHOLD_DAYS'] }}">
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row g-3">
+        <div class="col-md-2">
+            <label class="form-label">詳細のみ比率</label>
+            <input type="number" step="0.1" id="ratio-detail-only" class="form-control score-input" value="{{ config['RATIO_DETAIL_ONLY'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">解答のみ比率</label>
+            <input type="number" step="0.1" id="ratio-answer-only" class="form-control score-input" value="{{ config['RATIO_ANSWER_ONLY'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">詳細と解答に同ファイル比率</label>
+            <input type="number" step="0.1" id="ratio-duplicate" class="form-control score-input" value="{{ config['RATIO_DUPLICATE'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">遅延比率</label>
+            <input type="number" step="0.1" id="ratio-late" class="form-control score-input" value="{{ config['RATIO_LATE'] }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">大遅延比率</label>
+            <input type="number" step="0.1" id="ratio-very-late" class="form-control score-input" value="{{ config['RATIO_VERY_LATE'] }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
             <button onclick="saveThresholds()" class="btn btn-primary w-100">設定を保存</button>
         </div>
     </div>
 </div>
 {% endif %}
+
+
+
+
 
 {% if mode=='scores' and stats %}
 <div class="card p-3 mb-4 shadow-sm border-primary">
